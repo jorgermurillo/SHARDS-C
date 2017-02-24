@@ -174,7 +174,7 @@ uint64_t calc_reuse_dist( char *object, unsigned int num_obj, GHashTable **time_
 	uint64_t reuse_dist=0;
 	char* num_obj_str = (char*) malloc(15*sizeof(char)); 
 	snprintf(num_obj_str, 15*sizeof(char), "%u", num_obj);
-	char *reuse_dist_str = (char*) malloc(15*sizeof(char));
+	//char *reuse_dist_str = (char*) malloc(15*sizeof(char));
 	char *time_table_value ;
 
 	time_table_value = (char*)g_hash_table_lookup(*time_table, object);
@@ -196,7 +196,7 @@ uint64_t calc_reuse_dist( char *object, unsigned int num_obj, GHashTable **time_
 				timestamp = strtol(time_table_value,NULL,10);
 				reuse_dist =(uint64_t) calc_distance(timestamp,*tree);
 				//Busquemos la distancia de reuso en la hashtable distance_table
-				snprintf(reuse_dist_str, 15*sizeof(char), "%"PRIu64"", reuse_dist);
+				//snprintf(reuse_dist_str, 15*sizeof(char), "%"PRIu64"", reuse_dist);
 			
 			
 			
