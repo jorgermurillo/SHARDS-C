@@ -36,10 +36,9 @@ int main(int argc, char *argv[]){
 	GList *histograma;
 	
 	Tree *tree =NULL;
-	GHashTable *time_table = g_hash_table_new_full(g_str_hash, g_str_equal,NULL, ( GDestroyNotify )free);
-	GHashTable *distance_table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, ( GDestroyNotify )free);
-	GHashTable *mrc = g_hash_table_new(g_str_hash, g_str_equal);
-	
+	GHashTable *time_table = g_hash_table_new_full(g_str_hash, g_str_equal,( GDestroyNotify )free, ( GDestroyNotify )free);
+	GHashTable *distance_table = g_hash_table_new_full(g_str_hash, g_str_equal, ( GDestroyNotify )free, ( GDestroyNotify )free);
+	GHashTable *mrc = g_hash_table_new_full(g_str_hash, g_str_equal, ( GDestroyNotify )free, ( GDestroyNotify )free);
 	int obj_length = (int) strtol(argv[1], NULL, 10);
 	
 	double R = strtod(argv[2], NULL);
@@ -57,7 +56,7 @@ int main(int argc, char *argv[]){
 	clock_t time_begin, time_end;
 	double time_total = 0;	
   	double throughput =0;
-	char *object= malloc((obj_length+1)*sizeof(char));
+	char *object= malloc((obj_length+2)*sizeof(char));
 
 	
 	
@@ -70,7 +69,7 @@ int main(int argc, char *argv[]){
  
 	while(fgets(object, obj_length+2, file)!=NULL){
 		time_begin = clock();
-		object[11]='\0';	
+		object[obj_length]='\0';	
 		total_objects++;
 		one = qhashmurmur3_128(object ,obj_length*sizeof(char) ,hash );
 		
@@ -98,14 +97,15 @@ int main(int argc, char *argv[]){
 			
 		//tmp_str = (char*) malloc(15*sizeof(char));
 		
-		object= (char*) malloc((obj_length)*sizeof(char));
+		object= (char*) malloc((obj_length+2)*sizeof(char));
 		// num_obj++ solo debe pasar si se cumple la condicion hash(Li)% P <= T !!!!!!! 
 		
 	}
+
 	fclose(file);
 	printf("\n\n");	
 	printtree(tree, 2);
-
+	freetree(tree);
 	printf("\n\n");	
 	
 	GHashTableIter iter;
@@ -154,10 +154,11 @@ int main(int argc, char *argv[]){
 		print_MRC(&mrc, argv[4],'w');
 	}
 	
-	
-	
-
-	
+	histograma= g_list_first(histograma);
+	g_list_free(histograma);
+	g_hash_table_destroy(time_table);
+	g_hash_table_destroy(mrc);
+	g_hash_table_destroy(distance_table);
 
 	time_end = clock();
 	time_total = ((double)(time_end - time_begin))/CLOCKS_PER_SEC;
@@ -186,7 +187,7 @@ uint64_t calc_reuse_dist( char *object, unsigned int num_obj, GHashTable **time_
 				//printf("if\n");
 				g_hash_table_insert(*time_table, object,  num_obj_str);
 				*tree = insert(strtol(num_obj_str,NULL,10) ,*tree);
-				//En la tabla de distancias de reuso, la clave de 0 equivaler a la clave 'infinito'
+				//En la tabla de distancias de reuso, la clave de 0 equivale a la clave 'infinito'
 				reuse_dist = 0;
 			
 			
@@ -208,7 +209,7 @@ uint64_t calc_reuse_dist( char *object, unsigned int num_obj, GHashTable **time_
 				//Insert new timestamp from tree
 				*tree = insert(strtol(num_obj_str,NULL,10) ,*tree);
 				g_hash_table_insert(*time_table, object, num_obj_str);	
-				free(object);
+				
 
 	}
 	
@@ -292,8 +293,11 @@ GHashTable *MRC( GHashTable **distance_table){
 		}
 		tmp_str = (char*) malloc(15*sizeof(char));
 	}
+	miss_rates = g_list_first(miss_rates);
+	g_list_free_full(  miss_rates, (GDestroyNotify) free);
 
-	
+	hist = g_list_first(hist);
+	g_list_free_full( hist, (GDestroyNotify) free);
 		
 	
 	return MRC;
@@ -326,7 +330,8 @@ void print_MRC(GHashTable **MRC, char *nombre_archivo, char ch){
 		
 	}
 	fclose(file);	
-	g_list_free(hist);
+	hist = g_list_first(hist);
+	g_list_free_full(hist, (GDestroyNotify) free);
 
 
 }
