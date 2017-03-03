@@ -11,5 +11,7 @@ SHARDS_fixed_rate: SHARDS_fixed_rate.c
 SHARDS_fixed_size: SHARDS_fixed_size.c
 	$(CC) -g -Wall SHARDS_fixed_size.c splay.c murmurhash3.c $(CFLAGS) -o SHARDS_fixed_size
 
+SHARDS_fixed_rate_custom: SHARDS_fixed_rate_custom.c
+	$(CC) -g -Wall SHARDS_fixed_rate_custom.c splay.c murmurhash3.c $(CFLAGS) -o SHARDS_fixed_rate_custom
 
 
