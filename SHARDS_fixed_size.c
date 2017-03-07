@@ -73,7 +73,7 @@ int main(int argc, char *argv[]){
 	uint64_t num_obj=0;
 	
 	
-	char *object= malloc((obj_length+1)*sizeof(char));
+	char *object= malloc((obj_length+2)*sizeof(char));
 
 	
 	
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]){
 	file = fopen(argv[3], "r");
  
 	while(fgets(object, obj_length+2, file)!=NULL){
-		object[11]='\0';	
+		object[obj_length]='\0';	
 		total_objects++;
 		qhashmurmur3_128(object ,obj_length*sizeof(char) ,hash );
 		
@@ -102,32 +102,34 @@ int main(int argc, char *argv[]){
 
 		if(T_i < T){
 
-
+			//printf("########################################################################\n");
 			//First, we save the tuple <object,T_i> on the hashtable called set_table.
 			set_tree=insert(T_i,set_tree);	
+
 			set_list = g_hash_table_lookup(set_table, set_tree );			
 			//	if by searching the hashtable with the node we get a value of NULL, that means that we have to insert the value			
 			if(set_list ==NULL){
 				set_list = g_list_append(set_list, object);
-				//Is this necessary??
 				g_hash_table_insert(set_table, set_tree, set_list); 
 				set_size += 1;
+				
 				
 			}else{
 				//we search if the object read from the trace is on the list (several objects might have the same value of T_i)
 				
-				set_list = g_list_find_custom(set_list, object, (GCompareFunc)strcmp);
-				//If its not in the list, we search insert the object at the end of the list
-				if(set_list ==NULL){
+				set_list2 = g_list_find_custom(set_list, object, (GCompareFunc)strcmp);
+				//If its not in the list, we insert the object at the end of the list
+				if(set_list2 ==NULL){
 					set_list = g_list_append(set_list, object);
-					set_list = g_list_first(set_list);
-					g_hash_table_insert(set_table,set_tree,set_list);
+					//set_list = g_list_first(set_list);
 					set_size += 1;
+					set_list2=NULL;
 				}
 					
 				
 			
 			}
+
 			set_list = NULL;
 			//After storing the object in the Set S, we check if we went over the allowed limit S_max
 			if(set_size > S_max){
@@ -137,22 +139,28 @@ int main(int argc, char *argv[]){
 				Tree *evic_tree = NULL;
 				
 				evic_tree = find_rank((set_tree->size) -1, set_tree);	
-				evic_tree =splay( evic_tree->key, evic_tree);
+				
 				//Find the objects related mapped to the value from evic_tree
 				set_list = g_hash_table_lookup(set_table, evic_tree);
 				//Iterate over the list to remove the objects from the other data structures. (tree and time_table)			
-			
-				while(set_list !=NULL){
 				
-					//First, remove correspondint time from time_table
-					if(set_list->data == object){
+				while(set_list !=NULL){
+					
+					//First, remove correspondent time from time_table
+					//USE strcmp!!!! not ==
+					printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+					printf("set_list->data: %s  object:  %s  T_max: %d T_i: %"PRIu64"\n",(char *)set_list->data, object, evic_tree->key, T_i) ;
+					if(strcmp( ((char *)set_list->data),object) !=0){
+
 						object_evicted=true ;
 					}
+
 					set_list2 = set_list;
-					//We get each object from the list (that is stored in the data variable) and evict it from the hashtable
-					g_hash_table_remove(time_table, (char*) set_list->data);
-					
 					set_list = g_list_remove_link (set_list, set_list2);
+					//We get each object from the list (that is stored in the data variable) and evict it from the hashtable
+					g_hash_table_remove(time_table, (char*) set_list2->data);
+					
+					
 					free(set_list2->data);
 					g_list_free (set_list2);
 					set_list2=NULL;
@@ -160,7 +168,7 @@ int main(int argc, char *argv[]){
 	
 				}
 				
-				tree = delete(evic_tree->key, tree );	
+				set_tree = delete(evic_tree->key, set_tree );	
 
 				
 				//Rescaling
@@ -179,11 +187,13 @@ int main(int argc, char *argv[]){
 					reuse_dist = calc_reuse_dist( object,  num_obj, &time_table, &tree);
 					reuse_dist = (uint64_t)(reuse_dist/R);
 					update_dist_table(reuse_dist , &distance_table);	
-
 					printf("%u \n", reuse_dist);
+					
 									
+				}else{
+					printf("Same obj evicted!\n");
+	
 				}
-				
 				object_evicted=false;
 			}else{
 		

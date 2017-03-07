@@ -155,10 +155,10 @@ int main(int argc, char *argv[]){
 	}
 	
 	histograma= g_list_first(histograma);
-	g_list_free(histograma);
+	g_list_free_full(histograma, (GDestroyNotify) free);
 	g_hash_table_destroy(time_table);
 	g_hash_table_destroy(mrc);
-	g_hash_table_destroy(distance_table);
+	//g_hash_table_destroy(distance_table);
 
 	time_end = clock();
 	time_total = ((double)(time_end - time_begin))/CLOCKS_PER_SEC;
