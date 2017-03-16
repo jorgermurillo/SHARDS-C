@@ -31,7 +31,8 @@ int main(int argc, char *argv[]){
 		argv[2] = Value R which gives the threshhold value T = R*P for the comparison T_i<T
 		argv[3] = Trace file
 		argv[4] = file where the MRC is going to be written
-		argV[5] = If it exists (argc=5) and is equal to 1, SHARDS will print more pertinent data before the MRC
+		argV[5] =  Bucket size
+		argv[6] = If it exists (argc=5) and is equal to 1, SHARDS will print more pertinent data before the MRC
 	*/
 	GList *histograma;
 	
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]){
 	int obj_length = (int) strtol(argv[1], NULL, 10);
 	
 	double R = strtod(argv[2], NULL);
-	int bucket_size = 40;
+	
 	uint64_t P = 1;
 	P = P<<24;
 	uint64_t T =  R*P;
@@ -59,8 +60,8 @@ int main(int argc, char *argv[]){
 	char *object= malloc((obj_length+2)*sizeof(char));
 
 	
-	
-
+	unsigned int bucket =0;
+	unsigned int bucket_size = strtod(argv[5], NULL);
 	unsigned int reuse_dist=0;	
 	
 	
@@ -90,14 +91,17 @@ int main(int argc, char *argv[]){
 			reuse_dist = (uint64_t)(reuse_dist/R);
 
 			if(reuse_dist!=0){
-				reuse_dist = (reuse_dist/bucket_size)*bucket_size + bucket_size;
+				
+				bucket = ((reuse_dist-1)/bucket_size)*bucket_size + bucket_size;
 
+			}else{
+				bucket=0;
 			}	
-			printf("reuse_dist: %"PRIu64"  bucket: %d", (reuse_dist/bucket_size)*bucket_size + bucket_size );
+			printf("reuse_dist: %5u  bucket: %5u\n", reuse_dist, bucket );
 
-			update_dist_table(reuse_dist , &distance_table);	
+			update_dist_table(bucket , &distance_table);	
 
-			printf("%u \n", reuse_dist);
+			//printf("%u \n", reuse_dist);
 				
 		}
 		
@@ -146,7 +150,7 @@ int main(int argc, char *argv[]){
 	double fraction=0;
 	printf("%s \n\n\n", (char*)histograma->data);
 	mrc = MRC(&distance_table);	
-	if (argc==6 ){
+	if (argc== 7 ){
 		FILE *file2 = fopen(argv[4],"w");
 		fprintf(file2, "T: %"PRIu64"\n", T );
 		fprintf(file2, "P: %"PRIu64"\n", P );
