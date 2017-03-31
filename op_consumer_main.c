@@ -15,9 +15,13 @@ typedef struct {
     uint32_t     key_hv;
 } bm_op_t;
 
+static
+void process_op(bm_op_t op) {
+    // fprintf(stderr, "Received op: %d, key: %"PRIu32"\n", op_ptr->type, op_ptr->key_hv);
+}
+
 int main (void)
 {
-    //  Socket to talk to clients
     void* context = zmq_ctx_new ();
     void* consumer = zmq_socket (context, ZMQ_SUB);
     zmq_connect (consumer, "tcp://localhost:5555");
@@ -29,7 +33,7 @@ int main (void)
         int nbytes = zmq_recv(consumer, buffer, sizeof(bm_op_t), ZMQ_DONTWAIT);
         if (sizeof(bm_op_t) == nbytes) {
             bm_op_t* op_ptr = (bm_op_t*) buffer;
-            fprintf(stderr, "Received op: %d, key: %"PRIu32"\n", op_ptr->type, op_ptr->key_hv);    
+            process_op(*op_ptr);
         }
     }
     return 0;
