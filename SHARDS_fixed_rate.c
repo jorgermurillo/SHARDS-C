@@ -10,7 +10,7 @@
 
 uint64_t calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree);
 
-void update_dist_table(int  reuse_dist ,GHashTable **dist_table);
+void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table);
 
 GHashTable *MRC(GHashTable  **tabla);
 
@@ -41,20 +41,18 @@ int main (int argc, char *argv[]){
 	uint64_t T = R*P;
 	uint64_t T_i=0; 
 
-	int total_objects=0;
-	int num_obj=0;
-	double fraction=0;
-
-	uint64_t reuse_dist=0;	
-
 	Tree *tree=NULL;
 	GHashTable *time_table = g_hash_table_new_full(g_str_hash, g_str_equal, ( GDestroyNotify )free, ( GDestroyNotify )free);
 	GHashTable *dist_table = g_hash_table_new_full(g_int_hash , g_int_equal , ( GDestroyNotify )free, ( GDestroyNotify )free);
 
 	unsigned int bucket =0;
-	unsigned int bucket_size = strtod(argv[5], NULL);
+	unsigned int bucket_size = strtol(argv[5], NULL, 10);
 	
+	int total_objects=0;
+	unsigned int num_obj=0;
+	double fraction=0;
 
+	uint64_t reuse_dist=0;	
 
 	clock_t time_begin, time_end;
 	double time_total; 
@@ -74,7 +72,7 @@ int main (int argc, char *argv[]){
 		 	printf("########\nObject accepted!\n########\n");
 		 	num_obj++;
 
-		 	printf("num_obj: %d\n", num_obj);
+		 	printf("num_obj: %u\n", num_obj);
 		 	//printf("AAAAAAAAAA\n");
 		 	reuse_dist = calc_reuse_dist(object, num_obj, &time_table, &tree);
 		 	reuse_dist = (uint64_t)(reuse_dist/R);
@@ -139,7 +137,7 @@ int main (int argc, char *argv[]){
 		fprintf(file2, "P: %"PRIu64"\n", P );
 		fprintf(file2, "R: %f\n", R );
 		fprintf(file2, "Total References: %d\n", total_objects );	
-		fprintf(file2, "Accepted References: %d\n", num_obj );
+		fprintf(file2, "Accepted References: %u\n", num_obj );
 		fprintf(file2, "Unique Accepted References: %d\n", g_hash_table_size(time_table) );	
 		fraction = 100* ( num_obj/((double)total_objects));
 		fprintf(file2, "Percentage of accepted references: %3.2f %%\n", fraction);
@@ -183,47 +181,47 @@ int main (int argc, char *argv[]){
 }
 uint64_t calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree){
 
-	uint64_t timestamp=0;
 	uint64_t reuse_dist=0;
 
-	char *time_table_value =(char*) g_hash_table_lookup(*time_table, object);
-	char* num_obj_str = (char*)malloc(10*sizeof(char));
-	snprintf(num_obj_str,15*sizeof(char), "%u", num_obj);
+	unsigned int *time_table_value =(unsigned int*) g_hash_table_lookup(*time_table, object);
+	unsigned int* num_obj_ptr = malloc(sizeof(unsigned int));
+	*num_obj_ptr = num_obj;
+	//snprintf(num_obj_str,15*sizeof(char), "%u", num_obj);
 
 	if(time_table_value==NULL){
 
-		g_hash_table_insert(*time_table, object,  num_obj_str);
-		*tree = insert(strtol(num_obj_str,NULL,10) ,*tree);
+		g_hash_table_insert(*time_table, object,  num_obj_ptr);
+		*tree = insert(num_obj ,*tree);
 		reuse_dist=0;
 
 	}else{
-		timestamp = strtol(time_table_value,NULL,10);
-		reuse_dist =(uint64_t) calc_distance(timestamp,*tree);
+		//timestamp = strtol(time_table_value,NULL,10);
+		reuse_dist =(uint64_t) calc_distance( *time_table_value,*tree);
 				//Busquemos la distancia de reuso en la hashtable distance_table
 				//snprintf(reuse_dist_str, 15*sizeof(char), "%"PRIu64"", reuse_dist);
 				//printf("%u \n", reuse_dist);
 				//delete old timestamp from tree
-		*tree = delete(strtol(time_table_value,NULL,10) ,*tree);
+		*tree = delete(*time_table_value ,*tree);
 					
 				//Insert new timestamp from tree
-		*tree = insert(strtol(num_obj_str,NULL,10) ,*tree);
-		g_hash_table_insert(*time_table, object, num_obj_str);	
+		*tree = insert(num_obj ,*tree);
+		g_hash_table_insert(*time_table, object, num_obj_ptr);	
 	}
 
-	printf("num_obj_str: %s\n",num_obj_str);
+	printf("num_obj_ptr: %u \n", *num_obj_ptr);
 	
 	return reuse_dist;
 }
 
-void update_dist_table(int  reuse_dist ,GHashTable **dist_table){
+void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table){
 	
-	int *x = (int*) g_hash_table_lookup(*dist_table, &reuse_dist);
+	uint64_t *x = (uint64_t*) g_hash_table_lookup(*dist_table, &reuse_dist);
 	
 	if(x == NULL){
 		//printf("11111\n");
-		x = (int*)malloc(sizeof(int));
+		x = (uint64_t*)malloc(sizeof(uint64_t));
 		*x = 1;
-		int *dist = (int*)malloc(sizeof(int));
+		uint64_t *dist = (uint64_t*)malloc(sizeof(uint64_t));
 		*dist = reuse_dist;
 		g_hash_table_insert(*dist_table, dist, x);
 		//printf("hashtable value: %d\n", *(int*)g_hash_table_lookup(*dist_table, &reuse_dist));
