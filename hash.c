@@ -111,7 +111,7 @@ int main (int argc, char *argv[]){
 			 	printf("Set_size: %"PRIu64"\n", set_size);
 			 	set_list =NULL;
 			 	//Once we insert the object, we check if size of the Set S exceeded the max
-
+			 	/*
 			 	if(set_size > S_max){
 			 		// EVICTION	
 			 		//Find the largest value of T_i in set_tree
@@ -143,10 +143,10 @@ int main (int argc, char *argv[]){
 
 			 		printf("Set_size: %"PRIu64"\n", set_size);
 
-			 	}
+			 	}*/
 			 	
 			 	//We check again in case there was an eviction and the value of T_i is higher than the new value of T = T_max
-			 	if ( T_i < T ){
+			 	//if ( T_i < T ){
 
 				 	printf("########\nObject accepted!\n########\n");
 				 	num_obj++;
@@ -170,10 +170,10 @@ int main (int argc, char *argv[]){
 				 	update_dist_table(bucket, &dist_table, T);
 				 	printf("\n\n");
 
-			 	}else{
+			 	/*}else{
 
 			 		free(object);
-			 	}
+			 	}*/
 			 	
 
 
@@ -258,14 +258,30 @@ int main (int argc, char *argv[]){
 		g_hash_table_remove_all(time_table);
 		g_hash_table_unref (time_table);
 		*/
-		g_hash_table_destroy(time_table);
-		g_hash_table_destroy(dist_table);
-		g_hash_table_destroy(miss_rates);
+		
 
 		freetree(tree);
 		keys = g_list_first(keys);
 		g_list_free(keys);
 		printf("time: %f\n",time_total);
+
+		printf("Printing the set of objects.\n");
+		GHashTableIter iter;
+		gpointer key, value;
+		GList *plist=NULL;
+		g_hash_table_iter_init (&iter, set_table);
+		while (g_hash_table_iter_next (&iter, &key, &value)){
+	    	plist = (GList*) value;
+	    	while(plist!=NULL){
+	    		printf("object: %s\n", (char*)plist->data);
+	    		plist = plist->next;
+	    	}
+	  	}
+
+	  	g_hash_table_destroy(time_table);
+		g_hash_table_destroy(dist_table);
+		g_hash_table_destroy(miss_rates);
+
 		return 1;
 	}
 
