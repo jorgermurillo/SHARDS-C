@@ -36,6 +36,12 @@ int main (int argc, char *argv[]){
 
 	uint64_t  hash[2];
 	double R= strtod(argv[2],NULL);
+
+	if(R<=0.0 || R>1){
+		printf("The value of R has to lie between (0,1]\n");
+		exit(1);
+	}
+
 	uint64_t P=1;
 	P = P<<24;
 	uint64_t T = R*P;
@@ -177,7 +183,7 @@ int main (int argc, char *argv[]){
 	keys = g_list_first(keys);
 	g_list_free(keys);
 	printf("time: %f\n",time_total);
-	return 1;
+	return 0;
 }
 uint64_t calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree){
 
