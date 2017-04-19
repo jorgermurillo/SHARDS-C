@@ -8,7 +8,7 @@
 #include "murmurhash3.h"
 #include "splay.h"
 
-uint64_t calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree);
+unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree);
 
 void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table, uint64_t T_new);
 
@@ -38,14 +38,13 @@ int main (int argc, char *argv[]){
 	char* object = (char*)malloc((obj_length+2)*sizeof(char));
 
 	uint64_t  hash[2];
-	double R= 1.0;
+	double R = 1.0;
 	uint64_t P=1;
 	P = P<<24;
 	uint64_t T = R*P;
 
 	uint64_t T_i=0; 
-	uint64_t T_max = 0;
-
+	
 	Tree *tree=NULL;
 	GHashTable *time_table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, ( GDestroyNotify )free);
 	GHashTable *dist_table = g_hash_table_new_full(g_int_hash, g_int_equal, ( GDestroyNotify )free, ( GDestroyNotify )free);
@@ -54,8 +53,8 @@ int main (int argc, char *argv[]){
 	Tree *set_tree = NULL;
 	GList *set_list = NULL;
 	GList *set_list_search = NULL;
-	const uint64_t S_max= (uint64_t) strtol(argv[2], NULL, 10);
-	uint64_t set_size =0;
+	const unsigned int S_max= (uint64_t) strtol(argv[2], NULL, 10);
+	unsigned int set_size =0;
 
 
 
@@ -66,7 +65,7 @@ int main (int argc, char *argv[]){
 	unsigned int num_obj=0;
 	double fraction=0;
 
-	uint64_t reuse_dist=0;	
+	unsigned int reuse_dist=0;	
 
 	clock_t time_begin, time_end;
 	double time_total; 
@@ -75,7 +74,7 @@ int main (int argc, char *argv[]){
 	Tree *evic_tree = NULL;
 
 	while(fgets(object, obj_length+2, file)!=NULL){
-			 T_max =0;	
+			 	
 			 object[obj_length]='\0';
 			 printf("Object: %s\n", object);
 			 total_objects++;
@@ -95,7 +94,7 @@ int main (int argc, char *argv[]){
 			 	//printf("AAAAAAAAAA\n");
 			 	reuse_dist = calc_reuse_dist(object, num_obj, &time_table, &tree);
 				 	
-			 	reuse_dist = (uint64_t)(reuse_dist/R);
+			 	reuse_dist = (unsigned int)(reuse_dist/R);
 			 	if(reuse_dist!=0){
 					
 					bucket = ((reuse_dist-1)/bucket_size)*bucket_size + bucket_size;
@@ -103,7 +102,7 @@ int main (int argc, char *argv[]){
 				}else{
 					bucket=0;
 				}	
-			 	printf("Reuse distance: %5"PRIu64"\n", reuse_dist);
+			 	printf("Reuse distance: %5u\n", reuse_dist);
 			 	printf("Bucket: %u\n",bucket );
 			 	update_dist_table(bucket, &dist_table, T);
 			 	
@@ -137,35 +136,27 @@ int main (int argc, char *argv[]){
 			 		}
 
 			 	}
-			 	printf("Set_size: %"PRIu64"\n\n", set_size);
+			 	printf("Set_size: %u\n\n", set_size);
 			 	set_list =NULL;
 
 			 	if(set_size > S_max){
 			 		//Eviction
-			 		printf("EVICTION!!\n");
+			 		printf("EVICTION!!\n\n ");
 			 		
 			 	
 
 			 		evic_tree = find_rank((set_tree->size) -1, set_tree);
 			 					 		evic_tree = splay(evic_tree->key, evic_tree);
-			 		
+			 		printf("11111111\n");
 			 		eviction_key = evic_tree -> key;
-
+			 		printf("22222222\n");	
 			 		set_list = g_hash_table_lookup(set_table, evic_tree);
 			 		
 
-			 		GHashTableIter iter2;
-					gpointer key2, value2;
-					
-					g_hash_table_iter_init (&iter2, time_table);
-					
-			
-				  	
-
 			 		while(1){
-	    				
+	    				printf("33333333\n");
 			 			tree = delete( *(unsigned int *)(g_hash_table_lookup( time_table, (char*)set_list->data ) ), tree );
-
+			 			printf("44444444\n");
 			 			g_hash_table_remove(time_table, (char*)set_list->data );
 			 			set_size--;
 			 			free(set_list->data);
@@ -196,14 +187,20 @@ int main (int argc, char *argv[]){
 			object = (char*)malloc((obj_length+2)*sizeof(char));
 		}
 		time_begin = clock();
-		GList *keys = g_hash_table_get_keys (dist_table);
 		printf("Tamaño de dist_table: %d \n", g_hash_table_size(dist_table));
-		keys = g_list_sort (keys ,(GCompareFunc) intcmp );
-		//printf("Data: %d %p\n", *(int*)(keys->data), (keys->data));
+
 		time_end = clock();
 		
 		time_total= ((double)(time_end - time_begin))/CLOCKS_PER_SEC;
+
+		GList *keys = NULL; 
 		/*
+		keys = g_hash_table_get_keys (dist_table);
+		
+		//keys = g_list_sort (keys ,(GCompareFunc) intcmp );
+		//printf("Data: %d %p\n", *(int*)(keys->data), (keys->data));
+		
+		
 		while(1){	
 			//fprintf(file2, "%d %d\n", *(int*)(keys->data), *(int*)( g_hash_table_lookup(dist_table, keys->data) ) );
 				
@@ -214,13 +211,16 @@ int main (int argc, char *argv[]){
 			}
 			keys= keys->next;		
 		}
-		*/
+		
 		printf("\n");
+
+
+
 
 		keys = g_list_first(keys);
 		
 		g_list_free(keys);
-
+		*/
 		keys = g_hash_table_get_keys(dist_table);
 
 		keys = g_list_sort(keys, (GCompareFunc) intcmp);
@@ -236,6 +236,28 @@ int main (int argc, char *argv[]){
 			keys = keys->next;
 		}
 
+
+		//Checking if the expected number of references equals the actual number of references
+
+		unsigned int expected_sampled_refs = total_objects*R;
+
+		if( expected_sampled_refs != set_size ){
+			
+			int *y = malloc(sizeof(int));
+			*y = 0;
+
+
+
+			uint64_t *v = g_hash_table_lookup(dist_table, y);
+			printf("Anterior: %"PRIu64"\n", *v);
+			*v = *v + ( expected_sampled_refs - set_size );
+			printf("Posterior: %"PRIu64"\n", *v);
+		}
+
+
+		keys = g_list_first(keys);
+		g_list_free(keys);
+
 		GHashTable *miss_rates = MRC(&dist_table, T);
 		keys = g_hash_table_get_keys (miss_rates);
 		keys = g_list_sort (keys ,(GCompareFunc) intcmp );
@@ -243,7 +265,8 @@ int main (int argc, char *argv[]){
 		file2 =  fopen(argv[4],"w");
 		
 		if (argc== 7 ){
-			
+			fprintf(file2, "Trace file: %s\n", argv[3] );
+			fprintf(file2, "Set size: %u\n", set_size);
 			fprintf(file2, "T: %1.2"PRIu64"\n", T );
 			fprintf(file2, "P: %"PRIu64"\n", P );
 			fprintf(file2, "R: %f\n", R );
@@ -252,6 +275,7 @@ int main (int argc, char *argv[]){
 			fprintf(file2, "Unique Accepted References: %d\n", g_hash_table_size(time_table) );	
 			fraction = 100* ( num_obj/((double)total_objects));
 			fprintf(file2, "Percentage of accepted references: %3.2f %%\n", fraction);
+			fprintf(file2, "Expected sampled references: %u\n", expected_sampled_refs);
 			
 			
 		}
@@ -292,18 +316,19 @@ int main (int argc, char *argv[]){
 		gpointer key, value;
 		GList *plist=NULL;
 		g_hash_table_iter_init (&iter, set_table);
-		int set_cnt =0;
+		unsigned int set_cnt =0;
 		while (g_hash_table_iter_next (&iter, &key, &value)){
 	    	plist = (GList*) value;
+	    	printf("%d\n", ((Tree*)key)->key );
 	    	while(1){
 	    		printf("object: %s\n", (char*)plist->data);
 	    		set_cnt +=1;
 	    		free(plist->data);
 	    		if(plist->next == NULL){
-	    			
+	    			printf("\n");
 	    			break;
 	    		}
-	    		printf("\n");
+	    		
 	    		
 	    		plist = plist->next;
 	    	}
@@ -326,15 +351,15 @@ int main (int argc, char *argv[]){
 		freetree(set_tree);
 		g_hash_table_destroy(set_table);
 		
-		printf("Objetos en el set: %d\n", set_cnt);
+		printf("Objetos en el set: %u\n", set_cnt);
 		return 0;
 	}
 
 
-uint64_t calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree){
+unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree){
 
 		
-	uint64_t reuse_dist=0;
+	unsigned int reuse_dist=0;
 
 	unsigned int *time_table_value =(unsigned int*) g_hash_table_lookup(*time_table, object);
 	unsigned int* num_obj_ptr = malloc(sizeof(unsigned int));
@@ -366,7 +391,7 @@ uint64_t calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_t
 	return reuse_dist;
 }
 
-void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table, uint64_t T_new){
+void update_dist_table(uint64_t  reuse_dist, GHashTable **dist_table, uint64_t T_new){
 		
 		uint64_t *x = (uint64_t*) g_hash_table_lookup(*dist_table, &reuse_dist);
 		uint64_t T_old = 0;
@@ -386,7 +411,7 @@ void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table, uint64_t T
 			T_old = x[1];
 			if(T_old!=T_new){
 				tmp = ((double)T_new) /T_old;
-				x[0] = (uint64_t) x[0]*tmp;
+				x[0] = (uint64_t) x[0]*tmp  + 1;
 				x[1] = T_new;
 			}
 
@@ -413,7 +438,7 @@ GHashTable *MRC(GHashTable  **dist_table, uint64_t T_new){
 		uint64_t  total_sum = (uint64_t)tmp;
 		//printf("TOTAL SUM: %u \n", total_sum);
 
-		printf("cache size: %d part_sum: %"PRIu64" T: %"PRIu64" T_new %"PRIu64" \n", *(int*)keys->data, total_sum, hist_value[1], T_new);
+		printf("cache size: %d total_sum: %"PRIu64" T: %"PRIu64" T_new %"PRIu64" \n", *(int*)keys->data, total_sum, hist_value[1], T_new);
 		uint64_t part_sum = 0;
 		keys = keys->next;
 		while(1){	
@@ -422,9 +447,13 @@ GHashTable *MRC(GHashTable  **dist_table, uint64_t T_new){
 
 			hist_value = g_hash_table_lookup(*dist_table, keys->data);
 			if(hist_value[1] != T_new){
-				tmp = hist_value[0]*(( (double) T_new )/hist_value[1]);
+				tmp = hist_value[0]*(( (double) T_new )/hist_value[1]) + 1 ;
+				part_sum = part_sum + (uint64_t)tmp;
+			}else{
+				
+				part_sum = part_sum + hist_value[0];
 			}	
-			part_sum = part_sum + tmp;
+			
 			
 			*missrate =  (double) part_sum;
 			*cache_size = *(int*)(keys->data);
