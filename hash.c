@@ -35,7 +35,7 @@ int main (int argc, char *argv[]){
 	FILE *file2 =NULL;
 
 	int obj_length = strtol(argv[1],NULL,10);
-	char* object = (char*)malloc((obj_length+2)*sizeof(char));
+	char* object = (char*)calloc((obj_length+2),sizeof(char));
 
 	uint64_t  hash[2];
 	double R = 1.0;
@@ -73,27 +73,29 @@ int main (int argc, char *argv[]){
 	unsigned int eviction_key = 0;
 	Tree *evic_tree = NULL;
 
+	FILE *debug_file = fopen(argv[7],"w");
+
 	while(fgets(object, obj_length+2, file)!=NULL){
 			 	
 			 object[obj_length]='\0';
 			 printf("Object: %s\n", object);
 			 total_objects++;
+			 printf("%d\n", total_objects);
 			 qhashmurmur3_128(object ,obj_length*sizeof(char) ,hash );
 			 
 			 printf("Hash: %"PRIu64"\n", hash[1]);
-
+			
 			 T_i = hash[1] &(P-1);
 			 printf("T_i: %"PRIu64" T: %"PRIu64"\n", T_i, T);
-			  
+			 
 			if(T_i < T){
 
 				printf("########\nObject accepted!\n########\n");
 			 	num_obj++;
 
 			 	printf("num_obj: %u\n", num_obj);
-			 	//printf("AAAAAAAAAA\n");
-			 	reuse_dist = calc_reuse_dist(object, num_obj, &time_table, &tree);
-				 	
+			 			
+				reuse_dist = calc_reuse_dist(object, num_obj, &time_table, &tree);
 			 	reuse_dist = (unsigned int)(reuse_dist/R);
 			 	if(reuse_dist!=0){
 					
@@ -146,17 +148,17 @@ int main (int argc, char *argv[]){
 			 	
 
 			 		evic_tree = find_rank((set_tree->size) -1, set_tree);
-			 					 		evic_tree = splay(evic_tree->key, evic_tree);
-			 		printf("11111111\n");
+			 		evic_tree = splay(evic_tree->key, evic_tree);
+			 		
 			 		eviction_key = evic_tree -> key;
-			 		printf("22222222\n");	
+			 		
 			 		set_list = g_hash_table_lookup(set_table, evic_tree);
 			 		
 
 			 		while(1){
-	    				printf("33333333\n");
+	    				
 			 			tree = delete( *(unsigned int *)(g_hash_table_lookup( time_table, (char*)set_list->data ) ), tree );
-			 			printf("44444444\n");
+			 			
 			 			g_hash_table_remove(time_table, (char*)set_list->data );
 			 			set_size--;
 			 			free(set_list->data);
@@ -184,7 +186,7 @@ int main (int argc, char *argv[]){
 			 	free(object);
 			}
 			 
-			object = (char*)malloc((obj_length+2)*sizeof(char));
+			object = (char*)calloc((obj_length+2), sizeof(char));
 		}
 		time_begin = clock();
 		printf("Tamaño de dist_table: %d \n", g_hash_table_size(dist_table));
@@ -194,33 +196,11 @@ int main (int argc, char *argv[]){
 		time_total= ((double)(time_end - time_begin))/CLOCKS_PER_SEC;
 
 		GList *keys = NULL; 
-		/*
-		keys = g_hash_table_get_keys (dist_table);
 		
-		//keys = g_list_sort (keys ,(GCompareFunc) intcmp );
-		//printf("Data: %d %p\n", *(int*)(keys->data), (keys->data));
-		
-		
-		while(1){	
-			//fprintf(file2, "%d %d\n", *(int*)(keys->data), *(int*)( g_hash_table_lookup(dist_table, keys->data) ) );
-				
-			printf( "%d %d  \n", *(int*)(keys->data), *(int*)( g_hash_table_lookup(dist_table, (int*)keys->data) ));
-			//printf( "%d %d  p1: %p  p2: %p\n", *(int*)(keys->data), *(int*)( g_hash_table_lookup(dist_table, keys->data) ),(keys->data), ( g_hash_table_lookup(dist_table, keys->data) ) );
-			if(keys->next ==NULL){
-				break;
-			}
-			keys= keys->next;		
-		}
-		
-		printf("\n");
-
-
-
-
 		keys = g_list_first(keys);
 		
 		g_list_free(keys);
-		*/
+		
 		keys = g_hash_table_get_keys(dist_table);
 
 		keys = g_list_sort(keys, (GCompareFunc) intcmp);
@@ -252,6 +232,8 @@ int main (int argc, char *argv[]){
 			printf("Anterior: %"PRIu64"\n", *v);
 			*v = *v + ( expected_sampled_refs - set_size );
 			printf("Posterior: %"PRIu64"\n", *v);
+
+			free(y);
 		}
 
 
