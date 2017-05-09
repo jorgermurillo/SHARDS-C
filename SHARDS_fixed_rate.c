@@ -32,7 +32,7 @@ int main (int argc, char *argv[]){
 	FILE *file2 =NULL;
 	
 	int obj_length = strtol(argv[1],NULL,10);
-	char* object = (char*)malloc((obj_length+2)*sizeof(char));
+	char* object = (char*)calloc((obj_length+2) , sizeof(char));
 
 	uint64_t  hash[2];
 	double R= strtod(argv[2],NULL);
@@ -103,7 +103,7 @@ int main (int argc, char *argv[]){
 		 	free(object);
 		 }
 		 
-		 object = (char*)malloc((obj_length+2)*sizeof(char));
+		 object = (char*)calloc((obj_length+2) , sizeof(char));
 	}
 	time_begin = clock();
 	GList *keys = g_hash_table_get_keys (dist_table);

@@ -416,7 +416,7 @@ void update_dist_table(uint64_t  reuse_dist, GHashTable **dist_table, uint64_t T
 			//printf("x[0]: %"PRIu64"  x[1]: %"PRIu64"\n",x[0],x[1]);
 			
 		}
-	}
+}
 
 GHashTable *MRC(GHashTable  **dist_table, uint64_t T_new){
 
