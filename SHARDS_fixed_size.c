@@ -17,6 +17,7 @@ int main (int argc, char *argv[]){
 		argv[4] = file where the MRC is going to be written
 		argv[5] = Bucket size
 		argv[6] = If it exists (argc=7) SHARDS will print more pertinent data before the MRC
+		
 	*/
 
 	FILE *file;
@@ -45,13 +46,13 @@ int main (int argc, char *argv[]){
 	const unsigned int S_max= (uint64_t) strtol(argv[2], NULL, 10);
 	unsigned int set_size =0;
 
-
+	unsigned int evic_obj = 0;
 
 	unsigned int bucket =0;
 	unsigned int bucket_size = strtol(argv[5], NULL,10);
 
 	int total_objects=0;
-	unsigned int num_obj=0;
+	int num_obj=0;
 	double fraction=0;
 
 	unsigned int reuse_dist=0;	
@@ -65,7 +66,7 @@ int main (int argc, char *argv[]){
 	
 	time_begin = clock();
 
-
+	int pp = 0;
 	while(fgets(object, obj_length+2, file)!=NULL){
 			 	
 			 object[obj_length]='\0';
@@ -93,6 +94,7 @@ int main (int argc, char *argv[]){
 					bucket = ((reuse_dist-1)/bucket_size)*bucket_size + bucket_size;
 
 				}else{
+					pp++;
 					bucket=0;
 				}	
 			 	//printf("Reuse distance: %5u\n", reuse_dist);
@@ -136,7 +138,7 @@ int main (int argc, char *argv[]){
 			 		//Eviction
 			 		//printf("EVICTION!!\n\n ");
 			 		
-			 	
+			 		
 
 			 		evic_tree = find_rank((set_tree->size) -1, set_tree);
 			 		evic_tree = splay(evic_tree->key, evic_tree);
@@ -152,6 +154,7 @@ int main (int argc, char *argv[]){
 			 			
 			 			g_hash_table_remove(time_table, (char*)set_list->data );
 			 			set_size--;
+			 			evic_obj++;
 			 			free(set_list->data);
 	    				if(set_list->next == NULL){
 	    			
@@ -205,9 +208,10 @@ int main (int argc, char *argv[]){
 		*/
 		
 		//Checking if the expected number of references equals the actual number of references
-
-		unsigned int expected_sampled_refs = total_objects*R;
-
+		
+		int expected_sampled_refs = total_objects*R;
+		printf("expected ref: %d\n set: %d\n", expected_sampled_refs , set_size);
+		/*
 		if( expected_sampled_refs != set_size ){
 			
 			int * y = malloc(sizeof(int));
@@ -217,17 +221,42 @@ int main (int argc, char *argv[]){
 
 			uint64_t *v = g_hash_table_lookup(dist_table, y);
 			//printf("Anterior: %"PRIu64"\n", *v);
-			*v = *v + ( expected_sampled_refs - set_size );
+			printf("YES: %"PRIu64"\n", *v);
+			printf("%d\n", ((int)expected_sampled_refs - (int)set_size));
+			*v = *v + ( (int)expected_sampled_refs - (int)set_size );
 			//printf("Posterior: %"PRIu64"\n", *v);
-
+			printf("Now: %"PRIu64"\n", *v);
 			free(y);
 		}
+		*/
+
+
 
 
 		keys = g_list_first(keys);
 		g_list_free(keys);
 
+		keys = g_hash_table_get_keys(dist_table);
+		keys = g_list_sort(keys, (GCompareFunc) intcmp );
+		char debug_name[256];
+		snprintf(debug_name , sizeof(debug_name),"%s%s" , argv[4], "_debug");
+		FILE *file_debug = fopen(debug_name, "w");
+		uint64_t *tmp_db; 
+		while(1){
+			tmp_db = g_hash_table_lookup(dist_table, keys->data);
+			fprintf(file_debug, "%u %"PRIu64" %"PRIu64"\n",*(unsigned int*)keys->data, tmp_db[0], tmp_db[1]);
+			if(keys->next == NULL){
+				break;
+			}
+			keys = keys->next;
+		}	
+		keys = g_list_first(keys);
+		g_list_free(keys);
+
 		GHashTable *miss_rates = MRC_fixed_size(&dist_table, T);
+
+		//GHashTable *miss_rates = MRC(&dist_table);
+
 		time_end = clock();
 		keys = g_hash_table_get_keys (miss_rates);
 		keys = g_list_sort (keys ,(GCompareFunc) intcmp );
@@ -241,7 +270,7 @@ int main (int argc, char *argv[]){
 			fprintf(file2, "P: %"PRIu64"\n", P );
 			fprintf(file2, "R: %f\n", R );
 			fprintf(file2, "Total References: %d\n", total_objects );	
-			fprintf(file2, "Accepted References: %u\n", num_obj );
+			fprintf(file2, "Accepted References: %d\n", num_obj );
 			fraction = 100* ( num_obj/((double)total_objects));
 			fprintf(file2, "Percentage of accepted references: %3.2f %%\n", fraction);
 			fprintf(file2, "Expected sampled references: %u\n", expected_sampled_refs);
@@ -313,7 +342,7 @@ int main (int argc, char *argv[]){
 
 	  	
 
-	  
+	  	printf("PP: %d\n", pp);
 	  	
 
 		printf("Trace file: %s\n", argv[3] );
@@ -322,7 +351,7 @@ int main (int argc, char *argv[]){
 		printf("P: %"PRIu64"\n", P );
 		printf("R: %f\n", R );
 		printf("Total References: %d\n", total_objects );	
-		printf("Accepted References: %u\n", num_obj );
+		printf("Accepted References: %d\n", num_obj );
 		fraction = 100* ( num_obj/((double)total_objects));
 		printf("Percentage of accepted references: %3.2f %%\n", fraction);
 		printf("Expected sampled references: %u\n", expected_sampled_refs);
@@ -330,7 +359,7 @@ int main (int argc, char *argv[]){
 		printf("Objetos en el set: %u \n", set_cnt);
 		printf("Time: %.3f seconds\n", time_total);
 		printf("Throughput: %.3f objects per second \n", throughput);
-
+		printf("Objects evicted: %u\n", evic_obj);
 		g_hash_table_destroy(time_table);
 
 		g_hash_table_destroy(dist_table);

@@ -54,6 +54,8 @@ int main (int argc, char *argv[]){
 	clock_t time_begin, time_end;
 	double time_total; 
 	
+	int pp=0;
+
 	while(fgets(object, obj_length+2, file)!=NULL){
 		 object[obj_length]='\0';
 		 //printf("Object: %s\n", object);
@@ -72,13 +74,14 @@ int main (int argc, char *argv[]){
 		 	//printf("num_obj: %u\n", num_obj);
 		 	//printf("AAAAAAAAAA\n");
 		 	reuse_dist = calc_reuse_dist(object, num_obj, &time_table, &tree);
-		 	reuse_dist = (uint64_t)(reuse_dist/R);
+		 	reuse_dist = (unsigned int)(reuse_dist/R);
 
 		 	if(reuse_dist!=0){
 				
 				bucket = ((reuse_dist-1)/bucket_size)*bucket_size + bucket_size;
 
 			}else{
+				pp++;
 				bucket=0;
 			}	
 
@@ -104,20 +107,20 @@ int main (int argc, char *argv[]){
 	time_end = clock();
 	
 	time_total= ((double)(time_end - time_begin))/CLOCKS_PER_SEC;
-	/*
-	while(1){	
-		//fprintf(file2, "%d %d\n", *(int*)(keys->data), *(int*)( g_hash_table_lookup(dist_table, keys->data) ) );
-			
-		printf( "%d %d  \n", *(int*)(keys->data), *(int*)( g_hash_table_lookup(dist_table, (int*)keys->data) ));
-		//printf( "%d %d  p1: %p  p2: %p\n", *(int*)(keys->data), *(int*)( g_hash_table_lookup(dist_table, keys->data) ),(keys->data), ( g_hash_table_lookup(dist_table, keys->data) ) );
-		if(keys->next ==NULL){
+	
+		
+	char debug_name[256];
+	snprintf(debug_name , sizeof(debug_name),"%s%s" , argv[4], "_debug");
+	FILE *file_debug = fopen(debug_name, "w");
+	uint64_t *tmp_db; 
+	while(1){
+		tmp_db = g_hash_table_lookup(dist_table, keys->data);
+		fprintf(file_debug, "%u %"PRIu64" \n",*(unsigned int*)keys->data, tmp_db[0]);
+		if(keys->next == NULL){
 			break;
 		}
-		keys= keys->next;		
-	}
-	*/
-	//printf("\n");
-
+		keys = keys->next;
+	}	
 	keys = g_list_first(keys);
 	
 	g_list_free(keys);
@@ -142,7 +145,7 @@ int main (int argc, char *argv[]){
 		
 	}
 
-
+	printf("PP: %d\n", pp);
 	printf( "T: %"PRIu64"\n", T );
 	printf("P: %"PRIu64"\n", P );
 	printf( "R: %f\n", R );
