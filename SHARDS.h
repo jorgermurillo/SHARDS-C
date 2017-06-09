@@ -1,7 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <glib.h>
-
+#include <string.h>
+#include <stdint.h>
+#include "murmurhash3.h"
+#include "splay.h"
 
 typedef enum{
 	FIXED_RATE,
@@ -39,11 +42,12 @@ struct shards_elem {
 	//Additional data structures needed for SHARDS_fixed_size
 	GHashTable *set_table;	
 	Tree *set_tree;
+	Tree *evic_tree;
 	GList *set_list;
 	GList *set_list_search;
 
 
-	const unsigned int S_max;
+	unsigned int S_max;
 	unsigned int set_size;	
 
 	unsigned int bucket_size; 
@@ -64,7 +68,7 @@ SHARDS* SHARDS_fixed_size_init(unsigned int  max_setsize, unsigned int bucket_si
 
 SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsigned int bucket_size, objectType type);
 
-void SHARDS_feed_obj(SHARDS *shards, void* object);
+void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes);
 
 
 
