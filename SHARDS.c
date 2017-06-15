@@ -61,7 +61,7 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 	shards->version = FIXED_SIZE;
 	shards->S_max = max_setsize;
 
-	shards->R = 1;
+	shards->R = 0.1;
 
 	uint64_t tmp = 1;
 	tmp = tmp <<24;
@@ -129,6 +129,8 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 		unsigned int bucket = 0;
 		unsigned int bucket_size = shards->bucket_size;
 		unsigned int eviction_key = 0;
+
+
 		if(shards->version==FIXED_SIZE){
 			
 			qhashmurmur3_128(object ,nbytes ,hash );
@@ -243,6 +245,13 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 
 }
 
+void SHARDS_free(SHARDS* shards){
+
+
+
+
+
+}
 
 unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree){
 
@@ -328,9 +337,9 @@ void update_dist_table_fixed_size(uint64_t  reuse_dist, GHashTable **dist_table,
 		}
 }
 
-GHashTable *MRC(GHashTable  **dist_table){
+GHashTable *MRC(SHARDS *shards){
 
-	GList *keys = g_hash_table_get_keys(*dist_table);
+	GList *keys = g_hash_table_get_keys(shards->dist_histogram);
 	GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
 	keys = g_list_sort(keys, (GCompareFunc) intcmp );
 	
@@ -338,14 +347,14 @@ GHashTable *MRC(GHashTable  **dist_table){
 	double *missrate = NULL;
 	int *cache_size = NULL;
 	unsigned int part_sum = 0;
-	unsigned int total_sum = *(int*)(g_hash_table_lookup(*dist_table, keys->data) );
+	unsigned int total_sum = *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
 	//printf("TOTAL SUM: %u \n", total_sum);
 
 	keys = keys->next;
 	while(1){	
 		cache_size = malloc(sizeof(int));			
 		missrate = malloc(sizeof(double));
-		part_sum = part_sum + *(int*)(g_hash_table_lookup(*dist_table, keys->data) );
+		part_sum = part_sum + *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
 		//printf("PART SUM: %u \n", part_sum);
 		*missrate =  (double) part_sum;
 		*cache_size = *(int*)(keys->data);
@@ -379,12 +388,12 @@ GHashTable *MRC(GHashTable  **dist_table){
 	return tabla;
 }
 
-GHashTable *MRC_fixed_size(GHashTable  **dist_table, uint64_t T_new){
+GHashTable *MRC_fixed_size(SHARDS *shards){
 
-		GList *keys = g_hash_table_get_keys(*dist_table);
+		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
 		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
 		keys = g_list_sort(keys, (GCompareFunc) intcmp );
-		
+		uint64_t T_new = shards->T;
 		double tmp = 0.0;
 
 		double *missrate = NULL;
@@ -392,8 +401,10 @@ GHashTable *MRC_fixed_size(GHashTable  **dist_table, uint64_t T_new){
 		uint64_t  total_sum = 0;
 		uint64_t part_sum = 0;
 
-		uint64_t *hist_value = (g_hash_table_lookup(*dist_table, keys->data) );	
+		uint64_t *hist_value = (g_hash_table_lookup(shards->dist_histogram, keys->data) );	
 		
+		unsigned int hist_size = g_hash_table_size (shards->dist_histogram);
+
 		if(hist_value[1] != T_new){
 			tmp = hist_value[0]*(( (double) T_new )/hist_value[1]) +1 ;
 			total_sum = (uint64_t)tmp;
@@ -403,48 +414,62 @@ GHashTable *MRC_fixed_size(GHashTable  **dist_table, uint64_t T_new){
 		//printf("TOTAL SUM: %u \n", total_sum);
 
 		//printf("cache size: %d total_sum: %"PRIu64" T: %"PRIu64" T_new %"PRIu64" \n", *(int*)keys->data, total_sum, hist_value[1], T_new);
-		
-		keys = keys->next;
-		while(1){	
-			cache_size = malloc(sizeof(int));			
-			missrate = malloc(sizeof(double));
+		if(hist_size>1){
+			keys = keys->next;
+			while( 1 ){	
+				cache_size = malloc(sizeof(int));			
+				missrate = malloc(sizeof(double));
 
-			hist_value = g_hash_table_lookup(*dist_table, keys->data);
-			if(hist_value[1] != T_new){
-				tmp = hist_value[0]*(( (double) T_new )/hist_value[1]) + 1 ;
-				part_sum = part_sum + (uint64_t)tmp;
-			}else{
+				hist_value = g_hash_table_lookup(shards->dist_histogram, keys->data);
+				if(hist_value[1] != T_new){
+					tmp = hist_value[0]*(( (double) T_new )/hist_value[1]) + 1 ;
+					part_sum = part_sum + (uint64_t)tmp;
+				}else{
+					
+					part_sum = part_sum + hist_value[0];
+				}	
 				
-				part_sum = part_sum + hist_value[0];
-			}	
-			
-			
-			*missrate =  (double) part_sum;
-			*cache_size = *(int*)(keys->data);
-			//printf("cache size: %d part_sum: %f  T: %"PRIu64" T_new %"PRIu64" \n", *cache_size, *missrate, hist_value[1], T_new);
-			g_hash_table_insert(tabla, cache_size, missrate);
+				
+				*missrate =  (double) part_sum;
+				*cache_size = *(int*)(keys->data);
+				//printf("cache size: %d part_sum: %f  T: %"PRIu64" T_new %"PRIu64" \n", *cache_size, *missrate, hist_value[1], T_new);
+				g_hash_table_insert(tabla, cache_size, missrate);
 
-			if(keys->next ==NULL){
-				break;
+				if(keys->next ==NULL){
+					break;
+				}
+				keys= keys->next;		
 			}
-			keys= keys->next;		
-		}
+		
+
 		keys = g_list_first(keys);
 		total_sum = total_sum + part_sum;
 		//printf("TOTAL SUM: %u \n", total_sum);
-		keys= keys->next; //ignoring the zero (infinity) reuse dist
-		missrate = NULL;
-		while(1){	
-			
-			missrate = g_hash_table_lookup(tabla, keys->data);
-			*missrate = 1.0 - (*missrate/total_sum);
-			//printf("%d %f\n", *(int*)keys->data, *missrate);
-			
-			if(keys->next ==NULL){
-				break;
+		
+			keys= keys->next; //ignoring the zero (infinity) reuse dist
+			missrate = NULL; //We are gonna use miss_rate again as a temp variable
+			while(1){	
+				
+				missrate = g_hash_table_lookup(tabla, keys->data);
+				*missrate = 1.0 - (*missrate/total_sum);
+				//printf("%d %f\n", *(int*)keys->data, *missrate);
+				
+				if(keys->next ==NULL){
+					break;
+				}
+				keys= keys->next;		
 			}
-			keys= keys->next;		
-		}	
+		}else{
+
+			//	if hist_size == 1	
+			printf("WHATSUP\n");
+			cache_size = malloc(sizeof(int));			
+			missrate = malloc(sizeof(double));
+			*cache_size = *(int*)(keys->data);
+			*missrate = 1.0;
+			g_hash_table_insert(tabla, cache_size, missrate);
+			printf("GETOUT\n");
+		}
 		keys = g_list_first(keys);
 		g_list_free (keys);
 
