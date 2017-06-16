@@ -1,3 +1,7 @@
+#ifndef __SHARDS_H
+#define __SHARDS_H
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <glib.h>
@@ -90,3 +94,5 @@ GHashTable *MRC_fixed_size_free(SHARDS *shards);
 int intcmp(const void *x, const void *y);
 
 int doublecmp(const void *x, const void *y);
+
+#endif
