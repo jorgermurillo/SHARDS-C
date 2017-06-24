@@ -13,7 +13,7 @@
 typedef enum{
 	FIXED_RATE,
 	FIXED_SIZE,
-} shardsVersion;
+} shards_version;
 
 typedef enum {
 	String,
@@ -27,7 +27,7 @@ typedef struct shards_elem SHARDS;
 
 struct shards_elem {
 	
-	shardsVersion version;
+	shards_version version;
 
 	double R;
 	uint64_t P;

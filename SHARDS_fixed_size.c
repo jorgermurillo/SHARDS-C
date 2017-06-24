@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include <stdint.h>
+#include <stdint.h> 
 #include <time.h>
 #include "murmurhash3.h"
 #include "splay.h"
-#include "shards_utils.h"
+#include "shards_utils.h" 
 
 int main (int argc, char *argv[]){
 	/* Arguments
