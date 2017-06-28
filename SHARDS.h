@@ -21,7 +21,7 @@ typedef enum {
 	Int64,
 	Double,
 	Pointer,
-} objectType;
+} object_Type;
 
 typedef struct shards_elem SHARDS;
 
@@ -66,11 +66,11 @@ struct shards_elem {
 };
 
 
-SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, objectType type);
+SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_Type type);
 
-SHARDS* SHARDS_fixed_size_init(unsigned int  max_setsize, unsigned int bucket_size, objectType type);
+SHARDS* SHARDS_fixed_size_init(unsigned int  max_setsize, unsigned int bucket_size, object_Type type);
 
-SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsigned int bucket_size, objectType type);
+SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsigned int bucket_size, object_Type type);
 
 void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes);
 

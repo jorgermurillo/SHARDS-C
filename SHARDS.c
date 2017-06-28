@@ -1,11 +1,19 @@
 #include "SHARDS.h"
 
-SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, objectType type){
+SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_Type type){
+
+	//	Validation
+	if(R_init<=0 || R_init > 1){
+		printf("Value of R must be in the range (0,1].\n");
+		return NULL;
+	}
+
+
 
 	SHARDS *shards = malloc(sizeof(SHARDS));
 	shards->version = FIXED_RATE;
 	shards->R = R_init;
-
+ 
 	uint64_t tmp = 1;
 	tmp = tmp <<24;
 	shards->P = tmp;
@@ -55,7 +63,13 @@ SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, objectTy
 }
 
 
-SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_size, objectType type){
+SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_size, object_Type type){
+
+	if(max_setsize<=0 ){
+		printf("The maximum size of the working set must be greater then 0.\n");
+		return NULL;
+	}
+
 
 	SHARDS *shards = malloc(sizeof(SHARDS));
 	shards->version = FIXED_SIZE;
@@ -93,7 +107,7 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 
 	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, ( GDestroyNotify )free, ( GDestroyNotify )free);
 
-	shards->set_table = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, ( GDestroyNotify )g_list_free);;	
+	shards->set_table = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, ( GDestroyNotify )g_list_free);
 	shards->set_tree = NULL;
 	shards->set_list = NULL;
 	shards->set_list_search = NULL;
@@ -111,7 +125,17 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 
 }
 
-SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsigned int bucket_size, objectType type){
+SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsigned int bucket_size, object_Type type){
+
+	if(R_init<=0 || R_init > 1){
+		printf("Value of R must be in the range (0,1].\n");
+		return NULL;
+	}
+
+	if(max_setsize<=0 ){
+		printf("The maximum size of the working set must be greater then 0.\n");
+		return NULL;
+	}
 
 	SHARDS *shards = SHARDS_fixed_size_init(max_setsize, bucket_size, type);
 	shards->R = R_init;
@@ -130,12 +154,11 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 		unsigned int bucket_size = shards->bucket_size;
 		unsigned int eviction_key = 0;
 
+		qhashmurmur3_128(object ,nbytes ,hash );
+		T_i = hash[1] &( (shards->P)-1 );
 
 		if(shards->version==FIXED_SIZE){
 			
-			qhashmurmur3_128(object ,nbytes ,hash );
-			T_i = hash[1] &( (shards->P)-1 );
-
 			if(T_i < shards->T){
 
 				//printf("########\nObject accepted!\n########\n");
@@ -157,9 +180,6 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 			 	//printf("Bucket: %u\n",bucket );
 			 	update_dist_table_fixed_size(bucket, &(shards->dist_histogram), shards->T);
 			 	
-
-
-
 			 	//Insert <object, T_i> into Set S
 
 			 	shards->set_tree = insert(T_i, shards->set_tree);
@@ -188,7 +208,7 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 
 			 	}
 			 	//printf("Set_size: %u\n\n", set_size);
-			 	shards->set_list =NULL;
+			 	shards->set_list = NULL;
 
 			 	if(shards->set_size > shards->S_max){
 			 		//Eviction
@@ -238,14 +258,61 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 			}
 
 		}else{
-			//
+			//FIXED RATE CODE GOES HERE
 
+			if(T_i < shards->T){
+				shards->num_obj++;
+
+				//printf("num_obj: %u\n", num_obj);
+							
+				reuse_dist = calc_reuse_dist(object, shards->num_obj, &(shards->time_table), &(shards->dist_tree));
+				reuse_dist = (unsigned int)(reuse_dist/shards->R);
+				if(reuse_dist!=0){
+						
+					bucket = ((reuse_dist-1)/bucket_size)*bucket_size + bucket_size;
+
+				}else{
+					bucket=0;
+				}	
+				//printf("Reuse distance: %5u\n", reuse_dist);
+				//printf("Bucket: %u\n",bucket );
+				update_dist_table(bucket, &(shards->dist_histogram));
+
+
+
+			}else{
+				free(object);
+			}
 
 		}
-
 }
 
 void SHARDS_free(SHARDS* shards){
+
+		if(shards->version==FIXED_SIZE){
+
+			g_hash_table_destroy(shards->dist_histogram);
+			GList *keys = g_hash_table_get_keys(shards->time_table);
+			g_list_free_full(keys, (GDestroyNotify)free);
+
+			g_hash_table_destroy(shards->time_table);
+
+			g_hash_table_destroy(shards->set_table);
+			freetree(shards->dist_tree);
+			freetree(shards->set_tree);
+
+			free(shards);
+		
+		}else{
+
+			g_hash_table_destroy(shards->dist_histogram);
+			GList *keys = g_hash_table_get_keys(shards->time_table);
+			g_list_free_full(keys, (GDestroyNotify)free);
+
+			g_hash_table_destroy(shards->time_table);
+			freetree(shards->dist_tree);
+			free(shards);
+		}
 
 
 
@@ -256,36 +323,36 @@ void SHARDS_free(SHARDS* shards){
 unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree){
 
 		
-	unsigned int reuse_dist=0;
+		unsigned int reuse_dist=0;
 
-	unsigned int *time_table_value =(unsigned int*) g_hash_table_lookup(*time_table, object);
-	unsigned int* num_obj_ptr = malloc(sizeof(unsigned int));
-	*num_obj_ptr = num_obj;
-	//snprintf(num_obj_str,15*sizeof(char), "%u", num_obj);
+		unsigned int *time_table_value =(unsigned int*) g_hash_table_lookup(*time_table, object);
+		unsigned int* num_obj_ptr = malloc(sizeof(unsigned int));
+		*num_obj_ptr = num_obj;
+		//snprintf(num_obj_str,15*sizeof(char), "%u", num_obj);
 
-	if(time_table_value==NULL){
+		if(time_table_value==NULL){
 
-		g_hash_table_insert(*time_table, object,  num_obj_ptr);
-		*tree = insert(num_obj ,*tree);
-		reuse_dist=0;
+			g_hash_table_insert(*time_table, object,  num_obj_ptr);
+			*tree = insert(num_obj ,*tree);
+			reuse_dist=0;
 
-	}else{
-		//timestamp = strtol(time_table_value,NULL,10);
-		reuse_dist =(uint64_t) calc_distance( *time_table_value,*tree);
-				//Busquemos la distancia de reuso en la hashtable distance_table
-				//snprintf(reuse_dist_str, 15*sizeof(char), "%"PRIu64"", reuse_dist);
-				//printf("%u \n", reuse_dist);
-				//delete old timestamp from tree
-		*tree = delete(*time_table_value ,*tree);
-					
-				//Insert new timestamp from tree
-		*tree = insert(num_obj ,*tree);
-		g_hash_table_insert(*time_table, object, num_obj_ptr);	
-	}
+		}else{
+			//timestamp = strtol(time_table_value,NULL,10);
+			reuse_dist =(uint64_t) calc_distance( *time_table_value,*tree);
+					//Busquemos la distancia de reuso en la hashtable distance_table
+					//snprintf(reuse_dist_str, 15*sizeof(char), "%"PRIu64"", reuse_dist);
+					//printf("%u \n", reuse_dist);
+					//delete old timestamp from tree
+			*tree = delete(*time_table_value ,*tree);
+						
+					//Insert new timestamp from tree
+			*tree = insert(num_obj ,*tree);
+			g_hash_table_insert(*time_table, object, num_obj_ptr);	
+		}
 
-	//printf("num_obj_ptr: %u \n", *num_obj_ptr);
-	
-	return reuse_dist;
+		//printf("num_obj_ptr: %u \n", *num_obj_ptr);
+		
+		return reuse_dist;
 }
 
 void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table){

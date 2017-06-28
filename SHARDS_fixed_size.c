@@ -64,9 +64,11 @@ int main (int argc, char *argv[]){
 	Tree *evic_tree = NULL;
 
 	
-	time_begin = clock();
+	
 
 	int pp = 0;
+
+	time_begin = clock();
 	while(fgets(object, obj_length+2, file)!=NULL){
 			 	
 			 object[obj_length]='\0';
@@ -94,7 +96,7 @@ int main (int argc, char *argv[]){
 					bucket = ((reuse_dist-1)/bucket_size)*bucket_size + bucket_size;
 
 				}else{
-					pp++;
+					//pp++;
 					bucket=0;
 				}	
 			 	//printf("Reuse distance: %5u\n", reuse_dist);
@@ -183,7 +185,7 @@ int main (int argc, char *argv[]){
 			 
 			object = (char*)calloc((obj_length+2), sizeof(char));
 		}
-	
+		time_end = clock();
 		//printf("Tamaño de dist_table: %d \n", g_hash_table_size(dist_table));
 
 	
@@ -257,7 +259,7 @@ int main (int argc, char *argv[]){
 
 		//GHashTable *miss_rates = MRC(&dist_table);
 
-		time_end = clock();
+		
 		keys = g_hash_table_get_keys (miss_rates);
 		keys = g_list_sort (keys ,(GCompareFunc) intcmp );
 
@@ -292,7 +294,7 @@ int main (int argc, char *argv[]){
 
 		
 		
-		time_total= ((double)(time_end - time_begin))/CLOCKS_PER_SEC;
+		time_total= ((double)(time_end - time_begin))/(CLOCKS_PER_SEC/1000000);
 		double throughput = total_objects/ time_total;
 
 
@@ -355,10 +357,10 @@ int main (int argc, char *argv[]){
 		fraction = 100* ( num_obj/((double)total_objects));
 		printf("Percentage of accepted references: %3.2f %%\n", fraction);
 		printf("Expected sampled references: %u\n", expected_sampled_refs);
-		
 		printf("Objetos en el set: %u \n", set_cnt);
-		printf("Time: %.3f seconds\n", time_total);
-		printf("Throughput: %.3f objects per second \n", throughput);
+		printf("Time: %.3f microseconds\n", time_total);
+		printf("Time per object: %.3f microseconds \n", time_total/total_objects);
+		printf("Throughput: %.3f objects per microsecond \n", throughput);
 		printf("Objects evicted: %u\n", evic_obj);
 		g_hash_table_destroy(time_table);
 
