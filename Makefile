@@ -3,11 +3,17 @@ CFLAGS= `pkg-config --cflags --libs glib-2.0`
 LFLAGS=-std=c99
 
 
+test4:  SHARDS.o splay.o murmurhash3.o test4.o
+	$(CC) -g -Wall test4.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) -std=c99 -o test4
+
 test3:  SHARDS.o splay.o murmurhash3.o test3.o
 	$(CC) -g -Wall test3.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) -std=c99 -o test3
 
+test4.o: test4.c 
+	$(CC) -g -c -Wall test4.c $(CFLAGS)  -std=c99
+
 test3.o: test3.c 
-	$(CC) -g -c -Wall test3.c $(CFLAGS)  -std=c99
+	$(CC) -g -c -Wall test4.c $(CFLAGS)  -std=c99
 
 test2:  SHARDS.o splay.o murmurhash3.o test2.o
 	$(CC) -g -Wall test2.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) -std=c99 -o test2

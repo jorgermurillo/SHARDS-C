@@ -42,7 +42,7 @@ SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_T
 			break;
 	}
 
-	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, ( GDestroyNotify )free, ( GDestroyNotify )free);
+	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
 
 	shards->set_table = NULL;	
 	shards->set_tree = NULL;
@@ -105,7 +105,7 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 			break;
 	}
 
-	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, ( GDestroyNotify )free, ( GDestroyNotify )free);
+	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
 
 	shards->set_table = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, ( GDestroyNotify )g_list_free);
 	shards->set_tree = NULL;
@@ -169,14 +169,14 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 			 			
 				reuse_dist = calc_reuse_dist(object, shards->num_obj, &(shards->time_table), &(shards->dist_tree));
 			 	reuse_dist = (unsigned int)(reuse_dist/shards->R);
-			 	printf("Reuse dist:%u\n", reuse_dist);
+			 	//printf("Reuse dist:%u\n", reuse_dist);
 			 	if(reuse_dist!=0){
 					
 					bucket = ((reuse_dist-1)/bucket_size)*bucket_size + bucket_size;
-					printf("b: %u\n", bucket);
+					//printf("b: %u\n", bucket);
 				}else{
 					bucket=0;
-					printf("B: %u\n", bucket);
+					//printf("B: %u\n", bucket);
 				}	
 			 	//printf("Reuse distance: %5u\n", reuse_dist);
 			 	//printf("Bucket: %u\n",bucket );
@@ -498,7 +498,7 @@ GHashTable *MRC_fixed_size(SHARDS *shards){
 		if(hist_size>1){
 			keys = keys->next;
 			while( 1 ){	
-				cache_size = malloc(sizeof(int));			
+							
 				missrate = malloc(sizeof(double));
 
 				hist_value = g_hash_table_lookup(shards->dist_histogram, keys->data);
@@ -512,7 +512,7 @@ GHashTable *MRC_fixed_size(SHARDS *shards){
 				
 				
 				*missrate =  (double) part_sum;
-				*cache_size = *(int*)(keys->data);
+				cache_size = (keys->data);
 				//printf("cache size: %d part_sum: %f  T: %"PRIu64" T_new %"PRIu64" \n", *cache_size, *missrate, hist_value[1], T_new);
 				g_hash_table_insert(tabla, cache_size, missrate);
 
@@ -596,9 +596,10 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 			remove_link = keys;
 			keys = g_list_remove_link(keys,remove_link); //First parameter is the list, second is the node we wish to remove
 			
-			//Then we remove that key and its associated value from dist_histogram (and free them)
+			//Then we remove that key and its associated value from dist_histogram (this frees the value, not the key)
 			g_hash_table_remove(shards->dist_histogram,remove_link->data);
-			
+			//free the data inside remove_link
+			free(remove_link->data);
 			//Now that the data is freed, we free the GList node itself.
 			g_list_free(remove_link);	//free the GList node
 			
@@ -606,7 +607,7 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 			//keys = keys->next;
 			remove_link=NULL;
 			while( 1 ){	
-				cache_size = malloc(sizeof(int));			
+				//cache_size = malloc(sizeof(int));			
 				missrate = malloc(sizeof(double));
 
 				hist_value = g_hash_table_lookup(shards->dist_histogram, keys->data);
@@ -620,7 +621,7 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 				
 				
 				*missrate =  (double) part_sum;
-				*cache_size = *(int*)(keys->data);
+				cache_size = (keys->data);
 				//printf("cache size: %d part_sum: %f  T: %"PRIu64" T_new %"PRIu64" \n", *cache_size, *missrate, hist_value[1], T_new);
 				g_hash_table_insert(tabla, cache_size, missrate);
 
