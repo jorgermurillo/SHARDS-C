@@ -84,7 +84,7 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 	shards->T = (shards->R)*tmp;
 
 	shards->bucket_size = bucket_size;
-
+	printf("Bucket size: %u\n", shards->bucket_size);
 	shards->dist_tree = NULL;
 
 	switch(type){
@@ -128,19 +128,18 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsigned int bucket_size, object_Type type){
 
 	if(R_init<=0 || R_init > 1){
-		printf("Value of R must be in the range (0,1].\n");
 		return NULL;
 	}
 
 	if(max_setsize<=0 ){
-		printf("The maximum size of the working set must be greater then 0.\n");
 		return NULL;
 	}
 
 	SHARDS *shards = SHARDS_fixed_size_init(max_setsize, bucket_size, type);
 	shards->R = R_init;
-	shards->T = R_init*(shards->T);
-
+	printf("R: %f\n", shards->R);
+	shards->T = R_init*(shards->P);
+	printf("%"PRIu64"\n", shards->T);
 	return shards;
 
 }
@@ -157,8 +156,10 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 		qhashmurmur3_128(object ,nbytes ,hash );
 		T_i = hash[1] &( (shards->P)-1 );
 
+		//printf("Entered the feed_obj procedure.\n");
+
 		if(shards->version==FIXED_SIZE){
-			
+			//printf("T_i: %"PRIu64 " ?  T: %"PRIu64"\n", T_i, shards->T);
 			if(T_i < shards->T){
 
 				//printf("########\nObject accepted!\n########\n");
@@ -168,13 +169,14 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 			 			
 				reuse_dist = calc_reuse_dist(object, shards->num_obj, &(shards->time_table), &(shards->dist_tree));
 			 	reuse_dist = (unsigned int)(reuse_dist/shards->R);
+			 	printf("Reuse dist:%u\n", reuse_dist);
 			 	if(reuse_dist!=0){
 					
 					bucket = ((reuse_dist-1)/bucket_size)*bucket_size + bucket_size;
-
+					printf("b: %u\n", bucket);
 				}else{
 					bucket=0;
-
+					printf("B: %u\n", bucket);
 				}	
 			 	//printf("Reuse distance: %5u\n", reuse_dist);
 			 	//printf("Bucket: %u\n",bucket );
@@ -290,16 +292,28 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 void SHARDS_free(SHARDS* shards){
 
 		if(shards->version==FIXED_SIZE){
+			if(shards->dist_histogram!=NULL){
+				g_hash_table_destroy(shards->dist_histogram);
 
-			g_hash_table_destroy(shards->dist_histogram);
+			}
 			GList *keys = g_hash_table_get_keys(shards->time_table);
-			g_list_free_full(keys, (GDestroyNotify)free);
+			if(keys!=NULL){
+				g_list_free_full(keys, (GDestroyNotify)free);
+			}
+			
+			if(shards->time_table!=NULL){
+				g_hash_table_destroy(shards->time_table);
 
-			g_hash_table_destroy(shards->time_table);
-
-			g_hash_table_destroy(shards->set_table);
+			}
+			
+			if(shards->set_table!=NULL){
+				g_hash_table_destroy(shards->set_table);
+			}
+		
 			freetree(shards->dist_tree);
+			shards->dist_tree=NULL;
 			freetree(shards->set_tree);
+			shards->set_tree=NULL;
 
 			free(shards);
 		
@@ -529,6 +543,127 @@ GHashTable *MRC_fixed_size(SHARDS *shards){
 		}else{
 
 			//	if hist_size == 1	
+			
+			cache_size = malloc(sizeof(int));			
+			missrate = malloc(sizeof(double));
+			*cache_size = *(int*)(keys->data);
+			*missrate = 1.0;
+			g_hash_table_insert(tabla, cache_size, missrate);
+			
+		}
+		keys = g_list_first(keys);
+		g_list_free (keys);
+
+		return tabla;
+}
+
+GHashTable *MRC_fixed_size_empty(SHARDS *shards){
+
+
+		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
+		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
+		keys = g_list_sort(keys, (GCompareFunc) intcmp );
+		uint64_t T_new = shards->T;
+		double tmp = 0.0;
+
+		GList* remove_link=NULL;
+
+		double *missrate = NULL;
+		int *cache_size = NULL;
+		uint64_t  total_sum = 0;
+		uint64_t part_sum = 0;
+
+		
+		unsigned int hist_size = g_hash_table_size (shards->dist_histogram);
+
+		
+		//printf("TOTAL SUM: %u \n", total_sum);
+
+		//printf("cache size: %d total_sum: %"PRIu64" T: %"PRIu64" T_new %"PRIu64" \n", *(int*)keys->data, total_sum, hist_value[1], T_new);
+		if(hist_size > 1){
+			
+			uint64_t *hist_value = (g_hash_table_lookup(shards->dist_histogram, keys->data) );	
+		
+
+			if(hist_value[1] != T_new){
+				tmp = hist_value[0]*(( (double) T_new )/hist_value[1]) +1 ;
+				total_sum = (uint64_t)tmp;
+			}else{
+				total_sum = *hist_value;
+			}
+			//We are going to remove the key, value pair for the key=0 in dist_histogram
+			//First we remove the node in keys the has the value 0
+			remove_link = keys;
+			keys = g_list_remove_link(keys,remove_link); //First parameter is the list, second is the node we wish to remove
+			
+			//Then we remove that key and its associated value from dist_histogram (and free them)
+			g_hash_table_remove(shards->dist_histogram,remove_link->data);
+			
+			//Now that the data is freed, we free the GList node itself.
+			g_list_free(remove_link);	//free the GList node
+			
+			//We dont need to do a keys=keys->next, g_list_remove_link() did that for us already
+			//keys = keys->next;
+			remove_link=NULL;
+			while( 1 ){	
+				cache_size = malloc(sizeof(int));			
+				missrate = malloc(sizeof(double));
+
+				hist_value = g_hash_table_lookup(shards->dist_histogram, keys->data);
+				if(hist_value[1] != T_new){
+					tmp = hist_value[0]*(( (double) T_new )/hist_value[1]) + 1 ;
+					part_sum = part_sum + (uint64_t)tmp;
+				}else{
+					
+					part_sum = part_sum + hist_value[0];
+				}	
+				
+				
+				*missrate =  (double) part_sum;
+				*cache_size = *(int*)(keys->data);
+				//printf("cache size: %d part_sum: %f  T: %"PRIu64" T_new %"PRIu64" \n", *cache_size, *missrate, hist_value[1], T_new);
+				g_hash_table_insert(tabla, cache_size, missrate);
+
+				if(keys->next ==NULL){
+					//Repeated code to be able to get out of the while loop
+					//Maybe if the condition is while(keys!=NULL), don know if g_list_remove_link() returns NULL
+					remove_link = keys;
+					keys = g_list_remove_link(keys,remove_link);
+					g_hash_table_remove(shards->dist_histogram,remove_link->data);
+					g_list_free(remove_link);
+					remove_link=NULL;
+					break;
+				}
+				remove_link = keys;
+				keys = g_list_remove_link(keys,remove_link);
+				g_hash_table_remove(shards->dist_histogram,remove_link->data);
+				g_list_free(remove_link);
+				remove_link=NULL;
+				//keys= keys->next;		
+			}
+			
+			keys = g_hash_table_get_keys(tabla);
+			keys = g_list_sort(keys, (GCompareFunc) intcmp );
+			//keys = g_list_first(keys);
+			total_sum = total_sum + part_sum;
+			//printf("TOTAL SUM: %u \n", total_sum);
+		
+			
+			missrate = NULL; //We are gonna use miss_rate again as a temp variable
+			while(1){	
+				
+				missrate = g_hash_table_lookup(tabla, keys->data);
+				*missrate = 1.0 - (*missrate/total_sum);
+				//printf("%d %f\n", *(int*)keys->data, *missrate);
+				
+				if(keys->next ==NULL){
+					break;
+				}
+				keys= keys->next;		
+			}
+		}else if(hist_size == 1){
+
+			//	if hist_size == 1	
 			printf("WHATSUP\n");
 			cache_size = malloc(sizeof(int));			
 			missrate = malloc(sizeof(double));
@@ -536,11 +671,34 @@ GHashTable *MRC_fixed_size(SHARDS *shards){
 			*missrate = 1.0;
 			g_hash_table_insert(tabla, cache_size, missrate);
 			printf("GETOUT\n");
+		}else{
+			printf("The reuse distance histogram(dist_histogram) is empty");
+			return NULL;
+
 		}
 		keys = g_list_first(keys);
 		g_list_free (keys);
 
+		// Free the keys from time_table (object) which are also the data for the set_list that act as values for set_table
+		keys = g_hash_table_get_keys(shards->time_table);
+		g_list_free_full (keys, (GDestroyNotify) free);
+		keys=NULL;
+		//remove all the entries in time_table (object, t_i), where the time t_i is freed. Object is not
+		g_hash_table_remove_all (shards->time_table);
+		//remove every entry in set_table, freeing all the values, which are GLists, using g_list_free
+		g_hash_table_foreach_remove (shards->set_table, (GHRFunc) dummy, NULL);
+		
+		
+		//Freeing dist_tree
+		freetree(shards->dist_tree);
+		shards->dist_tree=NULL;
+		//freeing set_tree, whose nodes act as the keys in set_table
+		freetree(shards->set_tree);
+		shards->set_tree=NULL;
+		//shards->dist_histogram==NULL;
 		return tabla;
+
+
 }
 
 int intcmp(const void *x, const void *y){
@@ -553,4 +711,9 @@ int doublecmp(const void *x, const void *y){
 		const double a = *(double*)x;
 		const double b = *(double*)y;
 		return (a < b) ? -1 : (a > b);
+}
+
+bool dummy(void* x){
+	return true; 
+
 }

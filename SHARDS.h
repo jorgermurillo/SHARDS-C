@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include "murmurhash3.h"
 #include "splay.h"
+#include <inttypes.h>
 
 typedef enum{
 	FIXED_RATE,
@@ -89,10 +90,12 @@ GHashTable *MRC_fixed_size(SHARDS *shards);
 
 GHashTable *MRC_free(SHARDS* shards);
 
-GHashTable *MRC_fixed_size_free(SHARDS *shards);
+GHashTable *MRC_fixed_size_empty(SHARDS *shards);
 
 int intcmp(const void *x, const void *y);
 
 int doublecmp(const void *x, const void *y);
+
+bool dummy(void* x);
 
 #endif
