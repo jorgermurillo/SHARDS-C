@@ -78,7 +78,7 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes);
 void SHARDS_free(SHARDS* shards);
 
 //private functions
-unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree);
+unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version);
 
 void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table);
 
@@ -86,9 +86,9 @@ void update_dist_table_fixed_size(uint64_t  reuse_dist, GHashTable **dist_table,
 
 GHashTable *MRC(SHARDS* shards);
 
-GHashTable *MRC_fixed_size(SHARDS *shards);
+GHashTable *MRC_empty(SHARDS* shards);
 
-GHashTable *MRC_free(SHARDS* shards);
+GHashTable *MRC_fixed_size(SHARDS *shards);
 
 GHashTable *MRC_fixed_size_empty(SHARDS *shards);
 

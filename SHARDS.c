@@ -167,7 +167,7 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 
 			 	//printf("num_obj: %u\n", num_obj);
 			 			
-				reuse_dist = calc_reuse_dist(object, shards->num_obj, &(shards->time_table), &(shards->dist_tree));
+				reuse_dist = calc_reuse_dist(object, shards->num_obj, &(shards->time_table), &(shards->dist_tree), shards->version);
 			 	reuse_dist = (unsigned int)(reuse_dist/shards->R);
 			 	//printf("Reuse dist:%u\n", reuse_dist);
 			 	if(reuse_dist!=0){
@@ -233,7 +233,7 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 			 			g_hash_table_remove(shards->time_table, (char*)shards->set_list->data );
 			 			shards->set_size-=1;
 			 			shards->evic_obj+=1;
-			 			free(shards->set_list->data);
+			 			
 	    				if(shards->set_list->next == NULL){
 	    			
 	    					break;
@@ -267,8 +267,9 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 
 				//printf("num_obj: %u\n", num_obj);
 							
-				reuse_dist = calc_reuse_dist(object, shards->num_obj, &(shards->time_table), &(shards->dist_tree));
+				reuse_dist = calc_reuse_dist(object, shards->num_obj, &(shards->time_table), &(shards->dist_tree), shards->version);
 				reuse_dist = (unsigned int)(reuse_dist/shards->R);
+				
 				if(reuse_dist!=0){
 						
 					bucket = ((reuse_dist-1)/bucket_size)*bucket_size + bucket_size;
@@ -319,11 +320,19 @@ void SHARDS_free(SHARDS* shards){
 		
 		}else{
 
-			g_hash_table_destroy(shards->dist_histogram);
+			if(shards->dist_histogram!=NULL){
+				g_hash_table_destroy(shards->dist_histogram);
+				
+			}
 			GList *keys = g_hash_table_get_keys(shards->time_table);
-			g_list_free_full(keys, (GDestroyNotify)free);
+			if(keys!=NULL){
+				g_list_free_full(keys, (GDestroyNotify)free);
+			}
 
-			g_hash_table_destroy(shards->time_table);
+			if(shards->time_table!=NULL){
+				g_hash_table_destroy(shards->time_table);
+
+			}
 			freetree(shards->dist_tree);
 			free(shards);
 		}
@@ -334,7 +343,7 @@ void SHARDS_free(SHARDS* shards){
 
 }
 
-unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree){
+unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version){
 
 		
 		unsigned int reuse_dist=0;
@@ -362,12 +371,19 @@ unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **ti
 					//Insert new timestamp from tree
 			*tree = insert(num_obj ,*tree);
 			g_hash_table_insert(*time_table, object, num_obj_ptr);	
+			if(version == FIXED_RATE){
+				free(object);
+			}
+			
 		}
 
 		//printf("num_obj_ptr: %u \n", *num_obj_ptr);
 		
 		return reuse_dist;
 }
+
+
+
 
 void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table){
 	
@@ -420,54 +436,160 @@ void update_dist_table_fixed_size(uint64_t  reuse_dist, GHashTable **dist_table,
 
 GHashTable *MRC(SHARDS *shards){
 
-	GList *keys = g_hash_table_get_keys(shards->dist_histogram);
-	GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
-	keys = g_list_sort(keys, (GCompareFunc) intcmp );
-	
-
-	double *missrate = NULL;
-	int *cache_size = NULL;
-	unsigned int part_sum = 0;
-	unsigned int total_sum = *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
-	//printf("TOTAL SUM: %u \n", total_sum);
-
-	keys = keys->next;
-	while(1){	
-		cache_size = malloc(sizeof(int));			
-		missrate = malloc(sizeof(double));
-		part_sum = part_sum + *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
-		//printf("PART SUM: %u \n", part_sum);
-		*missrate =  (double) part_sum;
-		*cache_size = *(int*)(keys->data);
-		//printf("%d %f\n", *cache_size, *missrate);
-		g_hash_table_insert(tabla, cache_size, missrate);
-
-		if(keys->next ==NULL){
-			break;
-		}
-		keys= keys->next;		
-	}
-	keys = g_list_first(keys);
-	total_sum = total_sum + part_sum;
-	//printf("TOTAL SUM: %u \n", total_sum);
-	keys= keys->next; //ignoring the zero (infinity) reuse dist
-	missrate = NULL;
-	while(1){	
+		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
+		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
+		keys = g_list_sort(keys, (GCompareFunc) intcmp );
 		
-		missrate = g_hash_table_lookup(tabla, keys->data);
-		*missrate = 1.0 - (*missrate/total_sum);
-		//printf("%d %f\n", *(int*)keys->data, *missrate);
-		
-		if(keys->next ==NULL){
-			break;
-		}
-		keys= keys->next;		
-	}	
-	keys = g_list_first(keys);
-	g_list_free (keys);
 
-	return tabla;
+		double *missrate = NULL;
+		int *cache_size = NULL;
+		unsigned int part_sum = 0;
+		unsigned int total_sum = *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
+		//printf("TOTAL SUM: %u \n", total_sum);
+
+		keys = keys->next;
+		while(1){	
+			cache_size = malloc(sizeof(int));			
+			missrate = malloc(sizeof(double));
+			part_sum = part_sum + *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
+			//printf("PART SUM: %u \n", part_sum);
+			*missrate =  (double) part_sum;
+			*cache_size = *(int*)(keys->data);
+			//printf("%d %f\n", *cache_size, *missrate);
+			g_hash_table_insert(tabla, cache_size, missrate);
+
+			if(keys->next ==NULL){
+				break;
+			}
+			keys= keys->next;		
+		}
+		keys = g_list_first(keys);
+		total_sum = total_sum + part_sum;
+		//printf("TOTAL SUM: %u \n", total_sum);
+		keys= keys->next; //ignoring the zero (infinity) reuse dist
+		missrate = NULL;
+		while(1){	
+			
+			missrate = g_hash_table_lookup(tabla, keys->data);
+			*missrate = 1.0 - (*missrate/total_sum);
+			//printf("%d %f\n", *(int*)keys->data, *missrate);
+			
+			if(keys->next ==NULL){
+				break;
+			}
+			keys= keys->next;		
+		}	
+		keys = g_list_first(keys);
+		g_list_free (keys);
+
+		return tabla;
+} 
+
+GHashTable *MRC_empty(SHARDS* shards){
+
+		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
+		GList* remove_link=NULL;
+
+		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
+		keys = g_list_sort(keys, (GCompareFunc) intcmp );
+		
+
+		double *missrate = NULL;
+		int *cache_size = NULL;
+		unsigned int part_sum = 0;
+		unsigned int total_sum = *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
+		//printf("TOTAL SUM: %u \n", total_sum);
+		int hist_size = g_hash_table_size(shards->dist_histogram);
+
+		if(hist_size > 1){	
+			//keys = keys->next;
+			remove_link = keys;
+			
+			keys = g_list_remove_link(keys,remove_link);
+			g_hash_table_remove(shards->dist_histogram,remove_link->data);
+			free(remove_link->data);
+			g_list_free(remove_link);
+			while(1){	
+				//cache_size = malloc(sizeof(int));			
+				missrate = malloc(sizeof(double));
+				part_sum = part_sum + *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
+				//printf("PART SUM: %u \n", part_sum);
+				*missrate =  (double) part_sum;
+				cache_size = (keys->data);
+				//printf("%d %f\n", *cache_size, *missrate);
+				g_hash_table_insert(tabla, cache_size, missrate);
+
+				if(keys->next ==NULL){
+					remove_link = keys;
+					keys = g_list_remove_link(keys,remove_link);
+					g_hash_table_remove(shards->dist_histogram,remove_link->data);
+					g_list_free(remove_link);
+
+					break;
+				}
+				//keys= keys->next;
+				remove_link = keys;
+				keys = g_list_remove_link(keys,remove_link);
+				g_hash_table_remove(shards->dist_histogram,remove_link->data);
+				g_list_free(remove_link);		
+			}
+			keys = g_hash_table_get_keys(tabla);
+			keys = g_list_sort(keys, (GCompareFunc) intcmp );
+			total_sum = total_sum + part_sum;
+
+			//printf("TOTAL SUM: %u \n", total_sum);
+			
+			missrate = NULL;
+			while(1){	
+				
+				missrate = g_hash_table_lookup(tabla, keys->data);
+				*missrate = 1.0 - (*missrate/total_sum);
+				//printf("%d %f\n", *(int*)keys->data, *missrate);
+				
+				if(keys->next ==NULL){
+					
+					break;
+				}
+				keys= keys->next;
+						
+			}	
+			
+		}else if(hist_size == 1){
+
+			//	if hist_size == 1	
+			printf("WHATSUP\n");
+			cache_size = malloc(sizeof(int));			
+			missrate = malloc(sizeof(double));
+			*cache_size = *(int*)(keys->data);
+			*missrate = 1.0;
+			g_hash_table_insert(tabla, cache_size, missrate);
+			printf("GETOUT\n");
+
+
+		}else{
+			printf("The reuse distance histogram(dist_histogram) is empty");
+			return NULL;
+
+		}
+		
+		keys = g_list_first(keys);
+		g_list_free (keys);
+
+		// Free the keys from time_table (object) which are also the data for the set_list that act as values for set_table
+		keys = g_hash_table_get_keys(shards->time_table);
+		//remove all the entries in time_table (object, t_i), where the time t_i is freed. Object is not
+		g_hash_table_remove_all(shards->time_table);
+		g_list_free_full(keys, (GDestroyNotify) free);
+		keys=NULL;
+		
+		
+
+		freetree(shards->dist_tree);
+		shards->dist_tree=NULL;
+
+		return tabla;
 }
+
 
 GHashTable *MRC_fixed_size(SHARDS *shards){
 
@@ -476,6 +598,8 @@ GHashTable *MRC_fixed_size(SHARDS *shards){
 		keys = g_list_sort(keys, (GCompareFunc) intcmp );
 		uint64_t T_new = shards->T;
 		double tmp = 0.0;
+
+
 
 		double *missrate = NULL;
 		int *cache_size = NULL;
