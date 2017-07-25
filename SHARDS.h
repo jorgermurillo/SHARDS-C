@@ -19,9 +19,8 @@ typedef enum{
 typedef enum {
 	String,
 	Int,
-	Int64,
+	Uint64,
 	Double,
-	Pointer,
 } object_Type;
 
 typedef struct shards_elem SHARDS;
@@ -29,6 +28,7 @@ typedef struct shards_elem SHARDS;
 struct shards_elem {
 	
 	shards_version version;
+	object_Type dataType;
 
 	double R;
 	uint64_t P;
@@ -78,7 +78,7 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes);
 void SHARDS_free(SHARDS* shards);
 
 //private functions
-unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version);
+unsigned int calc_reuse_dist(void *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version);
 
 void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table);
 
@@ -93,6 +93,12 @@ GHashTable *MRC_fixed_size(SHARDS *shards);
 GHashTable *MRC_fixed_size_empty(SHARDS *shards);
 
 int intcmp(const void *x, const void *y);
+
+int uint64cmp(const void *x, const void *y);
+
+guint g_uint64_hash (gconstpointer v);
+
+gboolean g_uint64_equal (gconstpointer v1, gconstpointer v2);
 
 int doublecmp(const void *x, const void *y);
 

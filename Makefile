@@ -1,19 +1,30 @@
 CC=gcc
 CFLAGS= `pkg-config --cflags --libs glib-2.0`
-LFLAGS=-std=c99
+VERSION=-std=c11
 
+zeroMQ_SHARDS: SHARDS.o splay.o murmurhash3.o zeroMQ_SHARDS.o
+	$(CC) -g -Wall zeroMQ_SHARDS.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) $(VERSION) -L/usr/local/lib -lzmq -o zeroMQ_SHARDS
 
-test4:  SHARDS.o splay.o murmurhash3.o test4.o
-	$(CC) -g -Wall test4.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) -std=c99 -o test4
+zeroMQ_SHARDS.o: zeroMQ_SHARDS.c 
+	$(CC) -g -c -Wall zeroMQ_SHARDS.c $(CFLAGS) -L/usr/local/lib -lzmq $(VERSION)
+
+shards_test: shards_test.o SHARDS.o splay.o murmurhash3.o
+	$(CC) -g -Wall shards_test.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) $(VERSION) -o shards_test
+
+shards_test.o: shards_test.c
+	$(CC) -g -c -Wall shards_test.c $(CFLAGS)  $(VERSION)
+
+test4:  SHARDS.o splay.o murmurhash3.o test4.o 
+	$(CC) -g -Wall test4.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) $(VERSION) -o test4
 
 test3:  SHARDS.o splay.o murmurhash3.o test3.o
 	$(CC) -g -Wall test3.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) -std=c99 -o test3
 
 test4.o: test4.c 
-	$(CC) -g -c -Wall test4.c $(CFLAGS)  -std=c99
+	$(CC) -g -c -Wall test4.c $(CFLAGS)  $(VERSION)
 
 test3.o: test3.c 
-	$(CC) -g -c -Wall test3.c $(CFLAGS)  -std=c99
+	$(CC) -g -c -Wall test3.c $(CFLAGS)  $(VERSION)
 
 test2:  SHARDS.o splay.o murmurhash3.o test2.o
 	$(CC) -g -Wall test2.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) -std=c99 -o test2
@@ -48,4 +59,5 @@ splay.o: splay.c
 murmurhash3.o: murmurhash3.c 
 	$(CC) -g -c -Wall $(CFLAGS) $(LFLAGS)  murmurhash3.c
 
-
+jenkins_hash.o: jenkins_hash.c
+	$(CC) -g -c -Wall $(CFLAGS) $(LFLAGS)  jenkins_hash.c

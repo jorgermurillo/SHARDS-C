@@ -8,10 +8,11 @@ SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_T
 		return NULL;
 	}
 
-
+	
 
 	SHARDS *shards = malloc(sizeof(SHARDS));
 	shards->version = FIXED_RATE;
+	shards->dataType = type;
 	shards->R = R_init;
  
 	uint64_t tmp = 1;
@@ -31,15 +32,13 @@ SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_T
 		case Int:
 			shards->time_table = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
 			break;
-		case Int64:
-			shards->time_table = g_hash_table_new_full(g_int64_hash, g_int64_equal, NULL, ( GDestroyNotify )free);		
+		case Uint64:
+			shards->time_table = g_hash_table_new_full(g_uint64_hash, g_uint64_equal, NULL, ( GDestroyNotify )free);		
 			break;
 		case Double:
 			shards->time_table = g_hash_table_new_full(g_double_hash, g_double_equal, NULL, ( GDestroyNotify )free);
 			break;
-		case Pointer:
-			shards->time_table = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, ( GDestroyNotify )free);
-			break;
+		
 	}
 
 	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
@@ -69,10 +68,11 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 		printf("The maximum size of the working set must be greater then 0.\n");
 		return NULL;
 	}
-
+	
 
 	SHARDS *shards = malloc(sizeof(SHARDS));
 	shards->version = FIXED_SIZE;
+	shards->dataType = type;
 	shards->S_max = max_setsize;
 
 	shards->R = 0.1;
@@ -84,7 +84,7 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 	shards->T = (shards->R)*tmp;
 
 	shards->bucket_size = bucket_size;
-	printf("Bucket size: %u\n", shards->bucket_size);
+	
 	shards->dist_tree = NULL;
 
 	switch(type){
@@ -94,15 +94,13 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 		case Int:
 			shards->time_table = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
 			break;
-		case Int64:
-			shards->time_table = g_hash_table_new_full(g_int64_hash, g_int64_equal, NULL, ( GDestroyNotify )free);		
+		case Uint64:
+			shards->time_table = g_hash_table_new_full(g_uint64_hash, g_uint64_equal, NULL, ( GDestroyNotify )free);		
 			break;
 		case Double:
 			shards->time_table = g_hash_table_new_full(g_double_hash, g_double_equal, NULL, ( GDestroyNotify )free);
 			break;
-		case Pointer:
-			shards->time_table = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, ( GDestroyNotify )free);
-			break;
+		
 	}
 
 	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
@@ -136,10 +134,11 @@ SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsig
 	}
 
 	SHARDS *shards = SHARDS_fixed_size_init(max_setsize, bucket_size, type);
+	shards->dataType = type;
 	shards->R = R_init;
 	printf("R: %f\n", shards->R);
 	shards->T = R_init*(shards->P);
-	printf("%"PRIu64"\n", shards->T);
+	printf("T: %"PRIu64"\n", shards->T);
 	return shards;
 
 }
@@ -196,8 +195,19 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 			 		shards->set_size++;
 			 		
 			 	}else{
-			 		//If the search returns a list, search the object in the list	
-			 		shards->set_list_search = g_list_find_custom(shards->set_list, object, (GCompareFunc)strcmp);
+			 		//If the search returns a list, search the object in the list
+
+			 		if(shards->dataType==String){			 			
+			 			shards->set_list_search = g_list_find_custom(shards->set_list, object, (GCompareFunc)strcmp);
+			 		}else if(shards->dataType==Int ){
+			 			shards->set_list_search = g_list_find_custom(shards->set_list, object, (GCompareFunc)intcmp);
+			 		}else if(shards->dataType==Double){
+			 			shards->set_list_search = g_list_find_custom(shards->set_list, object, (GCompareFunc)doublecmp);
+			 		}else{
+			 			shards->set_list_search = g_list_find_custom(shards->set_list, object, (GCompareFunc)uint64cmp);
+			 		}
+
+			 		
 			 		//If the object is not on the list, add it
 			 		if(shards->set_list_search==NULL){
 			 			shards->set_list = g_list_append(shards->set_list, object);
@@ -343,7 +353,7 @@ void SHARDS_free(SHARDS* shards){
 
 }
 
-unsigned int calc_reuse_dist(char *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version){
+unsigned int calc_reuse_dist(void *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version){
 
 		
 		unsigned int reuse_dist=0;
@@ -832,11 +842,34 @@ int intcmp(const void *x, const void *y){
 		return (a < b) ? -1 : (a > b);
 }
 
+
+int uint64cmp(const void *x, const void *y){
+		const uint64_t a = *(uint64_t*)x;
+		const uint64_t b = *(uint64_t*)y;
+
+		if(a>b){
+			return 1;
+		}else if(a<b){
+			return -1;
+		}else{
+			return 0;
+		}
+}
+
+guint g_uint64_hash (gconstpointer v){
+  return (guint) *(const guint64*) v;
+}
+
+gboolean g_uint64_equal (gconstpointer v1, gconstpointer v2){
+  return *((const guint64*) v1) == *((const guint64*) v2);
+}
+
 int doublecmp(const void *x, const void *y){
 		const double a = *(double*)x;
 		const double b = *(double*)y;
 		return (a < b) ? -1 : (a > b);
 }
+
 
 bool dummy(void* x){
 	return true; 
