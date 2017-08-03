@@ -241,6 +241,7 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 			 			shards->dist_tree = delete( *(unsigned int *)(g_hash_table_lookup( shards->time_table, (char*)shards->set_list->data ) ), shards->dist_tree );
 			 			
 			 			g_hash_table_remove(shards->time_table, (char*)shards->set_list->data );
+			 			free(shards->set_list->data);
 			 			shards->set_size-=1;
 			 			shards->evic_obj+=1;
 			 			
@@ -248,6 +249,7 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 	    			
 	    					break;
 	    				}
+
 	    				shards->set_list = shards->set_list->next;
 	    			}	
 	    			//remove and free value from set_table
