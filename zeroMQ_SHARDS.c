@@ -20,7 +20,7 @@ int main (int argc, char *argv [])
     rc = zmq_setsockopt (subscriber, ZMQ_SUBSCRIBE, NULL, 0);
     assert (rc == 0);
 
-    SHARDS *shards = SHARDS_fixed_size_init(32000, 11, Int64);
+    SHARDS *shards = SHARDS_fixed_size_init(32000, 11, Uint64);
          
     bm_op_t rec_op = {BM_WRITE_OP, 0};
     uint64_t *key = malloc(sizeof(uint64_t)); 
