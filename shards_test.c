@@ -12,15 +12,23 @@ int main(int argc, char** argv){
 		argv[2] = Tracefile
 		argv[3] = 
 	*/
-	SHARDS *shards = SHARDS_fixed_size_init_R( 32000,0.5,  10, String);
 	
+	printf("SHARDS\n");
 	int obj_length = strtol(argv[1],NULL,10);
 
 	char* object = (char*)calloc((obj_length+2),sizeof(char));
 
-	FILE *file;
-	file = fopen(argv[2], "r");
+	int bucket = strtol(argv[2],NULL,10);
 	
+	
+
+	double R = strtod(argv[3], NULL);
+
+	SHARDS *shards = SHARDS_fixed_size_init_R( 32000000,R,  (unsigned int)bucket, String);
+
+	FILE *file;
+	file = fopen(argv[4], "r");
+
 	while(fgets(object, obj_length+2, file)!=NULL){
 		
 	
@@ -32,7 +40,7 @@ int main(int argc, char** argv){
 
 	GHashTable *mrc = MRC_fixed_size_empty(shards);
 
-	FILE *mrc_file = fopen(argv[3],"w");
+	FILE *mrc_file = fopen(argv[5],"w");
 	GList *keys = g_hash_table_get_keys(mrc);
 	keys = g_list_sort(keys, (GCompareFunc) intcmp);
 

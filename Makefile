@@ -2,6 +2,19 @@ CC=gcc
 CFLAGS= `pkg-config --cflags --libs glib-2.0`
 VERSION=-std=c11
 
+exact_mrc: SHARDS.o splay.o murmurhash3.o exact_mrc.o
+	$(CC) -g -Wall exact_mrc.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) $(VERSION) -o exact_mrc
+
+exact_mrc.o: exact_mrc.c
+	$(CC) -g -c -Wall exact_mrc.c $(CFLAGS)  $(VERSION)
+
+zeroMQ_Memcached: SHARDS.o splay.o murmurhash3.o zeroMQ_Memcached.o
+	$(CC) -g -Wall zeroMQ_Memcached.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) $(VERSION) -L/usr/local/lib -lzmq -o zeroMQ_Memcached
+
+zeroMQ_Memcached.o: zeroMQ_Memcached.c 
+	$(CC) -g -c -Wall zeroMQ_Memcached.c $(CFLAGS) -L/usr/local/lib -lzmq $(VERSION)
+
+
 zeroMQ_SHARDS: SHARDS.o splay.o murmurhash3.o zeroMQ_SHARDS.o
 	$(CC) -g -Wall zeroMQ_SHARDS.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) $(VERSION) -L/usr/local/lib -lzmq -o zeroMQ_SHARDS
 

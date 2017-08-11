@@ -145,6 +145,8 @@ SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsig
 
 void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 
+		shards->total_objects++;
+
 		uint64_t  hash[2];
 		uint64_t T_i = 0;
 		unsigned int reuse_dist=0;
@@ -350,7 +352,9 @@ void SHARDS_free(SHARDS* shards){
 		}
 
 
-
+		shards->total_objects =0;
+		shards->num_obj=0;
+		
 
 
 }

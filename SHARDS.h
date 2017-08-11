@@ -61,7 +61,7 @@ struct shards_elem {
 	unsigned int evic_obj; 
 	
 
-	int total_objects;
+	unsigned int total_objects;
 	int num_obj;
 	double fraction;
 };
