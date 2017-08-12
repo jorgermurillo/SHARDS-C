@@ -26,7 +26,7 @@ int main (int argc, char *argv [])
     uint64_t *key = malloc(sizeof(uint64_t)); 
     
     int cnt =0;
-
+ 
     while(1){
 
         if (cnt==611968){

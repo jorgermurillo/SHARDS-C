@@ -102,7 +102,7 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 			break;
 		
 	}
-
+ 
 	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
 
 	shards->set_table = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, ( GDestroyNotify )g_list_free);
