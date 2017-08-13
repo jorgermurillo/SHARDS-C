@@ -30,6 +30,7 @@ struct shards_elem {
 	shards_version version;
 	object_Type dataType;
 
+	double initial_R_value;
 	double R;
 	uint64_t P;
 	uint64_t T;

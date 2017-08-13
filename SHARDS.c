@@ -13,6 +13,7 @@ SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_T
 	SHARDS *shards = malloc(sizeof(SHARDS));
 	shards->version = FIXED_RATE;
 	shards->dataType = type;
+	shards->initial_R_value = R_init; // Not really used in the fixed_rate version.
 	shards->R = R_init;
  
 	uint64_t tmp = 1;
@@ -75,6 +76,7 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 	shards->dataType = type;
 	shards->S_max = max_setsize;
 
+	shards->initial_R_value = 0.1;
 	shards->R = 0.1;
 
 	uint64_t tmp = 1;
@@ -102,7 +104,7 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 			break;
 		
 	}
- 
+
 	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
 
 	shards->set_table = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, ( GDestroyNotify )g_list_free);
@@ -118,6 +120,8 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 	shards->num_obj = 0;
 	shards->fraction = 0;
 
+	fprintf(stderr,"R: %f\n", shards->R);
+	fprintf(stderr,"T: %"PRIu64"\n", shards->T);
 	return shards;
 
 
@@ -132,13 +136,14 @@ SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsig
 	if(max_setsize<=0 ){
 		return NULL;
 	}
-
+	
 	SHARDS *shards = SHARDS_fixed_size_init(max_setsize, bucket_size, type);
 	shards->dataType = type;
+	shards->initial_R_value = R_init;
 	shards->R = R_init;
-	printf("R: %f\n", shards->R);
+	
 	shards->T = R_init*(shards->P);
-	printf("T: %"PRIu64"\n", shards->T);
+	
 	return shards;
 
 }
@@ -378,6 +383,7 @@ unsigned int calc_reuse_dist(void *object, unsigned int num_obj, GHashTable **ti
 		}else{
 			//timestamp = strtol(time_table_value,NULL,10);
 			reuse_dist =(uint64_t) calc_distance( *time_table_value,*tree);
+			printf("%Reuse dist: %u\n", reuse_dist);
 					//Busquemos la distancia de reuso en la hashtable distance_table
 					//snprintf(reuse_dist_str, 15*sizeof(char), "%"PRIu64"", reuse_dist);
 					//printf("%u \n", reuse_dist);
@@ -709,11 +715,11 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 		GList* remove_link=NULL;
 
 		double *missrate = NULL;
-		int *cache_size = NULL;
+		int *cache_size = NULL; 
 		uint64_t  total_sum = 0;
 		uint64_t part_sum = 0;
-
-		
+		int t =0;
+		printf("Number of unique objects: %d\n", *(int*)g_hash_table_lookup(shards->dist_histogram, &t) );
 		unsigned int hist_size = g_hash_table_size (shards->dist_histogram);
 
 		
@@ -813,7 +819,7 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 			g_hash_table_insert(tabla, cache_size, missrate);
 			printf("GETOUT\n");
 		}else{
-			printf("The reuse distance histogram(dist_histogram) is empty");
+			printf("The reuse distance histogram (dist_histogram) is empty");
 			return NULL;
 
 		}
@@ -837,6 +843,13 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 		freetree(shards->set_tree);
 		shards->set_tree=NULL;
 		//shards->dist_histogram==NULL;
+
+		//If you are using this function, it means that you want to reuse the SHARDS struct, so we need to reset
+		//the value of R and T to their initial values.
+
+		shards->R=shards->initial_R_value;
+		shards->T = (shards->R)*(shards->P);
+		shards->set_size = 0;
 		return tabla;
 
 
