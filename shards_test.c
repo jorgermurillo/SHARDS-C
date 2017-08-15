@@ -9,8 +9,10 @@
 int main(int argc, char** argv){
 
 	/*	argv[1] = length of each object.
-		argv[2] = Tracefile
-		argv[3] = 
+		argv[2] =  bucket size
+		argv[3] = R
+		argv[4] = Tracefile
+		argv[5] = mrc file 
 	*/
 	
 	printf("SHARDS\n");

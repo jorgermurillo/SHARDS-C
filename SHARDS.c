@@ -120,8 +120,8 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 	shards->num_obj = 0;
 	shards->fraction = 0;
 
-	fprintf(stderr,"R: %f\n", shards->R);
-	fprintf(stderr,"T: %"PRIu64"\n", shards->T);
+	//fprintf(stderr,"R: %f\n", shards->R);
+	//fprintf(stderr,"T: %"PRIu64"\n", shards->T);
 	return shards;
 
 
@@ -383,7 +383,7 @@ unsigned int calc_reuse_dist(void *object, unsigned int num_obj, GHashTable **ti
 		}else{
 			//timestamp = strtol(time_table_value,NULL,10);
 			reuse_dist =(uint64_t) calc_distance( *time_table_value,*tree);
-			printf("%Reuse dist: %u\n", reuse_dist);
+			
 					//Busquemos la distancia de reuso en la hashtable distance_table
 					//snprintf(reuse_dist_str, 15*sizeof(char), "%"PRIu64"", reuse_dist);
 					//printf("%u \n", reuse_dist);
@@ -579,17 +579,17 @@ GHashTable *MRC_empty(SHARDS* shards){
 		}else if(hist_size == 1){
 
 			//	if hist_size == 1	
-			printf("WHATSUP\n");
+			//printf("WHATSUP\n");
 			cache_size = malloc(sizeof(int));			
 			missrate = malloc(sizeof(double));
 			*cache_size = *(int*)(keys->data);
 			*missrate = 1.0;
 			g_hash_table_insert(tabla, cache_size, missrate);
-			printf("GETOUT\n");
+			//printf("GETOUT\n");
 
 
 		}else{
-			printf("The reuse distance histogram(dist_histogram) is empty");
+			//printf("The reuse distance histogram(dist_histogram) is empty");
 			return NULL;
 
 		}
@@ -719,7 +719,7 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 		uint64_t  total_sum = 0;
 		uint64_t part_sum = 0;
 		int t =0;
-		printf("Number of unique objects: %d\n", *(int*)g_hash_table_lookup(shards->dist_histogram, &t) );
+		//printf("Number of unique objects: %d\n", *(int*)g_hash_table_lookup(shards->dist_histogram, &t) );
 		unsigned int hist_size = g_hash_table_size (shards->dist_histogram);
 
 		
@@ -811,15 +811,15 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 		}else if(hist_size == 1){
 
 			//	if hist_size == 1	
-			printf("WHATSUP\n");
+			//printf("WHATSUP\n");
 			cache_size = malloc(sizeof(int));			
 			missrate = malloc(sizeof(double));
 			*cache_size = *(int*)(keys->data);
 			*missrate = 1.0;
 			g_hash_table_insert(tabla, cache_size, missrate);
-			printf("GETOUT\n");
+			//printf("GETOUT\n");
 		}else{
-			printf("The reuse distance histogram (dist_histogram) is empty");
+			//printf("The reuse distance histogram (dist_histogram) is empty");
 			return NULL;
 
 		}

@@ -102,7 +102,7 @@ int main (int argc, char *argv [])
         // one and no at zero.
         shards_array[i-1] = SHARDS_fixed_size_init(16000, 10, Uint64);
         item_sizes[i-1] = size;
-        fprintf(stderr,"JORGE SIZE %2d: %10u\n", i, size);
+        //fprintf(stderr,"JORGE SIZE %2d: %10u\n", i, size);
         if (slab_sizes == NULL)
             size *= factor;
 
@@ -114,7 +114,7 @@ int main (int argc, char *argv [])
     size = slab_chunk_size_max;
     shards_array[i-1] = SHARDS_fixed_size_init(16000, 10, Uint64);
     item_sizes[i-1] = size;
-    fprintf(stderr,"JORGE SIZE %2d: %10u\n", i, size);
+    //fprintf(stderr,"JORGE SIZE %2d: %10u\n", i, size);
 
     // End initialization
     // Display the SHARDS structs
@@ -158,7 +158,7 @@ int main (int argc, char *argv [])
         zmq_recv(subscriber,&rec_op , sizeof(bm_op_t), 0);
         slab_ID = rec_op.slab_id - 128;
 
-        printf("%12"PRIu64":  %"PRIu8"\n", rec_op.key_hv, slab_ID);
+        //printf("%12"PRIu64":  %"PRIu8"\n", rec_op.key_hv, slab_ID);
 
         *object = rec_op.key_hv;
     
@@ -166,14 +166,14 @@ int main (int argc, char *argv [])
         number_of_objects ++;
 
         if(number_of_objects==OBJECT_LIMIT){
-        printf("CALCULATING Miss Rate Curves...\n");
+        //printf("CALCULATING Miss Rate Curves...\n");
 
             for( int k =0; k< NUMBER_OF_SHARDS; k++){
-                printf("PING: %d\n", k+1);
+                //printf("PING: %d\n", k+1);
                 if(shards_array[k]->total_objects !=0 ){
-                    printf("SHARDS has objects.\n");
+                    //printf("SHARDS has objects.\n");
                     snprintf(file_name,40,"%sMRC_SLAB_%02d_%05d.csv",mrc_path, k+1, epoch);
-                    fprintf(stderr, "Calculating MRC of Slab %2d (size %2u)\n", k+1, item_sizes[k]);
+                    //fprintf(stderr, "Calculating MRC of Slab %2d (size %2u)\n", k+1, item_sizes[k]);
 
                     
                     GHashTable *mrc = MRC_fixed_size_empty(shards_array[k]);
@@ -183,7 +183,7 @@ int main (int argc, char *argv [])
 
                     mrc_file = fopen(file_name,"w");
 
-                    printf("WRITING MRC FILE...\n");
+                    //printf("WRITING MRC FILE...\n");
                     while(1){
                         //printf("key: %7d  Value: %1.6f\n",*(int*)keys->data, *(double*)g_hash_table_lookup(mrc, keys->data) );
                         fprintf(mrc_file,"%7d,%1.7f\n",*(int*)keys->data, *(double*)g_hash_table_lookup(mrc, keys->data) );
@@ -194,7 +194,7 @@ int main (int argc, char *argv [])
                     }
 
                     fclose(mrc_file);
-                    printf("MRC FILE WRITTEN! :D\n");
+                    //printf("MRC FILE WRITTEN! :D\n");
                     keys = g_list_first(keys);
                     g_list_free(keys);
                     g_hash_table_destroy(mrc);
