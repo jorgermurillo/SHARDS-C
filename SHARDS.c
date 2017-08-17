@@ -609,6 +609,9 @@ GHashTable *MRC_empty(SHARDS* shards){
 		freetree(shards->dist_tree);
 		shards->dist_tree=NULL;
 
+		shards->total_objects = 0;
+		shards->num_obj=0;
+
 		return tabla;
 }
 
@@ -850,6 +853,9 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 		shards->R=shards->initial_R_value;
 		shards->T = (shards->R)*(shards->P);
 		shards->set_size = 0;
+		shards->total_objects = 0;
+		shards->num_obj=0;
+
 		return tabla;
 
 

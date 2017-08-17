@@ -1,8 +1,10 @@
+#define _POSIX_C_SOURCE 2
 #include "k_v_benchmark.h"
 #include "SHARDS.h"
 #include <zmq.h>
 #include <assert.h>
 #include <inttypes.h>
+#include <unistd.h>
  
 
 int main (int argc, char *argv [])
@@ -77,11 +79,22 @@ int main (int argc, char *argv [])
                         771184, 
                         1048576 };
                         */
-
+    double R_init=0.1;
     int *slab_sizes =NULL;
     unsigned int size = 96;
     //printf("max chunk size: %d\n", slab_chunk_size_max);
     //printf("DOUBLE: %f\n",  slab_chunk_size_max/factor);
+
+    int c;
+    while(-1!=(c =getopt(argc,argv,"R:" /* R_init value*/))){
+        switch(c){
+            case 'R':
+            R_init = strtod(optarg,NULL);
+            break;
+
+        }
+    }
+
     while (++i < MAX_NUMBER_OF_SLAB_CLASSES-1) {
 
         if (slab_sizes != NULL) {
@@ -100,7 +113,7 @@ int main (int argc, char *argv [])
         
         //initialize each SHARDS struct in the shards array. Index is [i-1] because the numbering starts at 
         // one and no at zero.
-        shards_array[i-1] = SHARDS_fixed_size_init(16000, 10, Uint64);
+        shards_array[i-1] = SHARDS_fixed_size_init_R(16000,R_init, 10, Uint64);
         item_sizes[i-1] = size;
         //fprintf(stderr,"JORGE SIZE %2d: %10u\n", i, size);
         if (slab_sizes == NULL)
@@ -112,7 +125,7 @@ int main (int argc, char *argv [])
     power_largest = i;
     NUMBER_OF_SHARDS = i;
     size = slab_chunk_size_max;
-    shards_array[i-1] = SHARDS_fixed_size_init(16000, 10, Uint64);
+    shards_array[i-1] = SHARDS_fixed_size_init_R(16000, R_init, 10, Uint64);
     item_sizes[i-1] = size;
     //fprintf(stderr,"JORGE SIZE %2d: %10u\n", i, size);
 

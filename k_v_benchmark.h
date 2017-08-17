@@ -31,7 +31,7 @@ typedef struct {
     uint8_t slab_id;
 } bm_op_t;
 
-void bm_init(uint32_t *buffer, double factor);
+void bm_init(uint32_t *buffer, double factor, double R_initialize);
 void* bm_loop_in_thread(void* args);
 void bm_record_op(bm_op_t op);
 
