@@ -70,8 +70,8 @@ bm_oq_item_t* bm_oq_pop(bm_oq_t* oq) {
 }
 
 // @ Gus: bm settings
-
-bm_type_t bm_type = BM_TO_QUEUE; 
+bm_type_t bm_type = BM_NONE;
+//bm_type_t bm_type = BM_TO_QUEUE; 
 //bm_type_t bm_type = BM_TO_ZEROMQ;
 //bm_type_t bm_type = BM_TO_LOCK_FREE_QUEUE;
 
@@ -98,7 +98,7 @@ FILE *mrc_file;
 
 
 struct mpscq* bm_mpsc_oq;
-#define BM_MPSC_OQ_CAP 10000 // @ Gus: capacity must be set right becasuse mpsc is NOT a ring buffer
+#define BM_MPSC_OQ_CAP (1000000 +1)// @ Gus: capacity must be set right becasuse mpsc is NOT a ring buffer
 void* zmq_context = NULL;
 void* zmq_sender = NULL;
 
@@ -110,82 +110,95 @@ bool bm_mpsc_oq_enqueue(bm_op_t op) {
 	return mpscq_enqueue(bm_mpsc_oq, op_ptr);
 }
 
-void bm_init(uint32_t *slab_sizes, double factor, double R_initialize) {
-
+void bm_init(int max_obj, bm_type_t queue_type, uint32_t *slab_sizes, double factor, double R_initialize) {
+    bm_type = queue_type;
     
     //shards2 = SHARDS_fixed_size_init(16000, 10, Uint64);
-	if (bm_type == BM_NONE) return;
+	if (queue_type == BM_NONE){
+        fprintf(stderr, "No Queue.\n");
+        return;
+    }else if(queue_type==BM_TO_QUEUE || queue_type==BM_TO_LOCK_FREE_QUEUE){
 
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
-    //JORGE: Initializing a SHARDS struct for each slab.
-    int power_largest;
-    int i = POWER_SMALLEST - 1;
-    unsigned int size = sizeof(item) + settings.chunk_size; 
-    //printf("SIZE OF ITEM: %u\n", size);
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+        //JORGE: Initializing a SHARDS struct for each slab.
+        int power_largest;
+        int i = POWER_SMALLEST - 1;
+        unsigned int size = sizeof(item) + settings.chunk_size; 
+        //printf("SIZE OF ITEM: %u\n", size);
 
-    while (++i < MAX_NUMBER_OF_SLAB_CLASSES-1) {
-        if (slab_sizes != NULL) {
-            if (slab_sizes[i-1] == 0)
+        while (++i < MAX_NUMBER_OF_SLAB_CLASSES-1) {
+            if (slab_sizes != NULL) {
+                if (slab_sizes[i-1] == 0)
+                    break;
+                size = slab_sizes[i-1];
+            } else if (size >= settings.slab_chunk_size_max / factor) {
                 break;
-            size = slab_sizes[i-1];
-        } else if (size >= settings.slab_chunk_size_max / factor) {
-            break;
-        }
-        /* Make sure items are always n-byte aligned */
-        if (size % CHUNK_ALIGN_BYTES)
-            size += CHUNK_ALIGN_BYTES - (size % CHUNK_ALIGN_BYTES);
+            }
+            /* Make sure items are always n-byte aligned */
+            if (size % CHUNK_ALIGN_BYTES)
+                size += CHUNK_ALIGN_BYTES - (size % CHUNK_ALIGN_BYTES);
 
-      
-        
-        //initializa each SHARDS struct in the shards array. Index is [i-1] because the numbering starts at 
-        // one and no at zero.
+          
+            
+            //initializa each SHARDS struct in the shards array. Index is [i-1] because the numbering starts at 
+            // one and no at zero.
+            shards_array[i-1] = SHARDS_fixed_size_init_R(16000,R_initialize ,10, Uint64);
+            item_sizes[i-1] = size;
+            //fprintf(stderr,"JORGE SIZE %d: %u\n", i, size);
+            if (slab_sizes == NULL)
+                size *= factor;
+
+           
+        }
+
+        power_largest = i;
+        NUMBER_OF_SHARDS = i;
+        size = settings.slab_chunk_size_max;
         shards_array[i-1] = SHARDS_fixed_size_init_R(16000,R_initialize ,10, Uint64);
         item_sizes[i-1] = size;
         //fprintf(stderr,"JORGE SIZE %d: %u\n", i, size);
-        if (slab_sizes == NULL)
-            size *= factor;
-
-       
-    }
-
-    power_largest = i;
-    NUMBER_OF_SHARDS = i;
-    size = settings.slab_chunk_size_max;
-    shards_array[i-1] = SHARDS_fixed_size_init_R(16000,R_initialize ,10, Uint64);
-    item_sizes[i-1] = size;
-    //fprintf(stderr,"JORGE SIZE %d: %u\n", i, size);
     
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
-    for(int j=0; j < NUMBER_OF_SHARDS; j++){
-        printf("R Value %2d: %1.3f\n",j+1, shards_array[j]->R);
+        for(int j=0; j < NUMBER_OF_SHARDS; j++){
+            printf("R Value %2d: %1.3f\n",j+1, shards_array[j]->R);
 
+        }
     }
-
+        
 	fprintf(stderr, "----------------------->GUS: Init Benchmarking\n");
-	switch(bm_type) {
+	switch(queue_type) {
     	case BM_NONE: {
+            fprintf(stderr, "No Queue.\n");
     		;
     	} break;
     	case BM_PRINT: {
+            fprintf(stderr, "Print\n");
     		;
     	} break;
     	case BM_DIRECT_FILE: {
+            fprintf(stderr, "Direct to File.\n");
     		bm_output_fd = open(bm_output_filename, 
     						 O_WRONLY | O_CREAT | O_TRUNC,
     						 S_IRUSR, S_IWUSR);
     	} break;
     	case BM_TO_QUEUE: {
+            fprintf(stderr, "Message Queue with Locks.\n" );
     		bm_oq_init(&bm_oq);
     	} break;
     	case BM_TO_LOCK_FREE_QUEUE: {
+            fprintf(stderr, "Lock Free Queue. Capacity: %d\n", BM_MPSC_OQ_CAP);
     		bm_mpsc_oq = mpscq_create(NULL, BM_MPSC_OQ_CAP);
     	} break;
     	case BM_TO_ZEROMQ: {
 		    zmq_context = zmq_ctx_new ();
 		    zmq_sender = zmq_socket (zmq_context, ZMQ_PUB);
-		    int rc = zmq_bind(zmq_sender, "tcp://*:5555");
+
+            int zeromq_socket_opt_value = 0;
+            int rc =  zmq_setsockopt (zmq_sender, ZMQ_SNDHWM,&zeromq_socket_opt_value , sizeof(int)); 
+
+		    rc = zmq_bind(zmq_sender, "tcp://*:5555");
             printf("result of zmq_bind(): %d\n", rc);
 		    fprintf (stderr, "Started zmq server...\n");
     	} break;

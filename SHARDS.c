@@ -23,7 +23,7 @@ SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_T
 	shards->T = R_init*tmp;
 
 	shards->bucket_size = bucket_size;
-
+ 
 	shards->dist_tree = NULL;
 
 	switch(type){
@@ -721,7 +721,7 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 		int *cache_size = NULL; 
 		uint64_t  total_sum = 0;
 		uint64_t part_sum = 0;
-		/int t =0;
+		//int t =0;
 		//printf("Number of unique objects: %d\n", *(int*)g_hash_table_lookup(shards->dist_histogram, &t) );
 		unsigned int hist_size = g_hash_table_size (shards->dist_histogram);
 

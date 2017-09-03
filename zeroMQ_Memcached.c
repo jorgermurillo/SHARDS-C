@@ -84,12 +84,15 @@ int main (int argc, char *argv [])
     unsigned int size = 96;
     //printf("max chunk size: %d\n", slab_chunk_size_max);
     //printf("DOUBLE: %f\n",  slab_chunk_size_max/factor);
-
+    int OBJECT_LIMIT= 1000000;
     int c;
-    while(-1!=(c =getopt(argc,argv,"R:" /* R_init value*/))){
+    while(-1!=(c =getopt(argc,argv,"R:" "O:" /* R_init value*/))){
         switch(c){
             case 'R':
             R_init = strtod(optarg,NULL);
+            break;
+            case 'O':
+            OBJECT_LIMIT = strtol(optarg,NULL,10);
             break;
 
         }
@@ -145,16 +148,18 @@ int main (int argc, char *argv [])
     int rc = zmq_connect (subscriber, "tcp://localhost:5555");
     assert (rc == 0);
 
+    int zeromq_socket_opt_value = 0;
   
     //rc = zmq_setsockopt (subscriber, ZMQ_SUBSCRIBE, filter, strlen (filter));
     rc = zmq_setsockopt (subscriber, ZMQ_SUBSCRIBE, NULL, 0);
     assert (rc == 0);
-
-    int OBJECT_LIMIT= 611968;
+    rc =  zmq_setsockopt (subscriber, ZMQ_RCVHWM,&zeromq_socket_opt_value , sizeof(int)); 
+    
     unsigned int epoch =1;
     int number_of_objects=0;
 
-         
+
+
     bm_op_t rec_op = {BM_WRITE_OP, 0, 0};
     uint64_t *object = malloc(sizeof(uint64_t));
     *object = rec_op.key_hv;
@@ -177,15 +182,16 @@ int main (int argc, char *argv [])
     
         SHARDS_feed_obj(shards_array[slab_ID -1] ,object , sizeof(uint64_t));
         number_of_objects ++;
+        printf("%d\n", number_of_objects);
 
         if(number_of_objects==OBJECT_LIMIT){
         //printf("CALCULATING Miss Rate Curves...\n");
 
             for( int k =0; k< NUMBER_OF_SHARDS; k++){
                 //printf("PING: %d\n", k+1);
-                if(shards_array[k]->total_objects !=0 ){
+                if(shards_array[k]->num_obj !=0 ){
                     //printf("SHARDS has objects.\n");
-                    snprintf(file_name,40,"%sMRC_SLAB_%02d_%05d.csv",mrc_path, k+1, epoch);
+                    snprintf(file_name,40,"%sMRC_epoch_%05d_slab_%02d.csv",mrc_path, epoch, k+1);
                     //fprintf(stderr, "Calculating MRC of Slab %2d (size %2u)\n", k+1, item_sizes[k]);
 
                     
@@ -194,13 +200,14 @@ int main (int argc, char *argv [])
                     GList *keys = g_hash_table_get_keys(mrc);
                     keys = g_list_sort(keys, (GCompareFunc) intcmp);
 
-                    mrc_file = fopen(file_name,"w");
+                    mrc_file = fopen(file_name,"w"); 
 
                     //printf("WRITING MRC FILE...\n");
                     while(1){
                         //printf("key: %7d  Value: %1.6f\n",*(int*)keys->data, *(double*)g_hash_table_lookup(mrc, keys->data) );
-                        fprintf(mrc_file,"%7d,%1.7f\n",*(int*)keys->data, *(double*)g_hash_table_lookup(mrc, keys->data) );
-
+                        if(mrc!=NULL){
+                            fprintf(mrc_file,"%7d,%1.7f\n",*(int*)keys->data, *(double*)g_hash_table_lookup(mrc, keys->data) );
+                        }
                         if(keys->next==NULL)
                             break;
                         keys=keys->next;
