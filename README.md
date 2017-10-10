@@ -10,6 +10,15 @@ TODO: Implement the SHARDS_adj, to deal with the error produced by vertical shif
 
 This work was done as part of a larger project for Dr. Cristina Abad (https://sites.google.com/site/cristinaabad/). 
 
+## Referencing our work
+
+If you found our tool useful and use it in research, please cite our work as follows:
+
+Instrumenting cloud caches for online workload monitoring 
+Jorge R. Murillo, Gustavo Totoy, Cristina L. Abad 
+16th Workshop on Adaptive and Reflective Middleware (ARM), co-located with ACM/IFIP/USENIX Middleware, 2017. 
+Code available at: https://github.com/jorgermurillo/SHARDS-C
+
 ## Acknowledgements
 
 This work was funded in part by a Google Faculty Research Award.
