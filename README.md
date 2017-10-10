@@ -10,6 +10,10 @@ TODO: Implement the SHARDS_adj, to deal with the error produced by vertical shif
 
 This work was done as part of a larger project for Dr. Cristina Abad (https://sites.google.com/site/cristinaabad/). 
 
+## Acknowledgements
+
 This work was funded in part by a Google Faculty Research Award.
+
+This work was possible thanks to the Amazon Web Services Cloud Credits for Research program.
 
 miau :cat:
