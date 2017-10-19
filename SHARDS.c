@@ -23,7 +23,7 @@ SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_T
 	shards->T = R_init*tmp;
 
 	shards->bucket_size = bucket_size;
- 
+
 	shards->dist_tree = NULL;
 
 	switch(type){
@@ -357,8 +357,6 @@ void SHARDS_free(SHARDS* shards){
 		}
 
 
-		shards->total_objects =0;
-		shards->num_obj=0;
 		
 
 

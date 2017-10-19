@@ -26,7 +26,7 @@ int main(int argc, char** argv){
 
 	double R = strtod(argv[3], NULL);
 
-	SHARDS *shards = SHARDS_fixed_size_init_R( 32000000,R,  (unsigned int)bucket, String);
+	SHARDS *shards = SHARDS_fixed_size_init_R( 32000,R,  (unsigned int)bucket, String);
 
 	FILE *file;
 	file = fopen(argv[4], "r");
