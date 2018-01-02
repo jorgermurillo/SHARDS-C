@@ -30,7 +30,7 @@ int main(int argc, char** argv){
 
 	FILE *file;
 	file = fopen(argv[4], "r");
-
+	clock_t start_time = clock();
 	while(fgets(object, obj_length+2, file)!=NULL){
 		
 	
@@ -41,6 +41,8 @@ int main(int argc, char** argv){
 	}
 
 	GHashTable *mrc = MRC_fixed_size_empty(shards);
+
+	
 
 	FILE *mrc_file = fopen(argv[5],"w");
 	GList *keys = g_hash_table_get_keys(mrc);
@@ -54,11 +56,21 @@ int main(int argc, char** argv){
 			break;
 		keys=keys->next;
 	}
+	clock_t end_time = clock();
 	fclose(file);
 	fclose(mrc_file);
 	keys = g_list_first(keys);
 	g_list_free(keys);
 	g_hash_table_destroy(mrc);
 	SHARDS_free(shards);
+	printf("%f\n", start_time);
+	printf("%f\n", end_time);
+	int total_time = ((end_time - start_time))/CLOCKS_PER_SEC;
+	printf("TIME: %f\n", total_time);
+	unsigned int objects_parsed =  shards->total_objects;
+
+	double throughput = objects_parsed/total_time;
+
+	printf("Throughput: %f\n", throughput);
 
 }
