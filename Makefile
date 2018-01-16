@@ -1,25 +1,30 @@
 CC=gcc
-CFLAGS= `pkg-config --cflags --libs glib-2.0`
+CFLAGS= -Wall -I./include `pkg-config --cflags --libs glib-2.0`
 VERSION=-std=c11
+ODIR=obj
+AR=ar
+ARFLGAS=rcs
 
+shards_test: obj/shards_test.o obj/splay.o obj/murmurhash3.o lib/libshardsc.a
+	$(CC) -g $^ $(CFLAGS) $(VERSION) -o $@
 
-shards_test: shards_test.o SHARDS.o splay.o murmurhash3.o
-	$(CC) -g -Wall shards_test.o splay.o murmurhash3.o SHARDS.o $(CFLAGS) $(VERSION) -o shards_test
-
-shards_test.o: shards_test.c
-	$(CC) -g -c -Wall shards_test.c $(CFLAGS)  $(VERSION)
+obj/shards_test.o: src/shards_test.c include/SHARDS.h
+	$(CC) -g -c  src/shards_test.c $(CFLAGS)  $(VERSION) -o $@
 
 dist: dist.c
-	$(CC) -g -Wall dist.c splay.c $(CFLAGS) -o dist
+	$(CC) -g  dist.c splay.c $(CFLAGS) -o dist
 
-SHARDS.o : SHARDS.c
-	$(CC) -g -c -Wall $(CFLAGS) $(LFLAGS)  SHARDS.c
+obj/SHARDS.o : src/SHARDS.c ./include/SHARDS.h
+	$(CC) -g -c  $(CFLAGS) $(LFLAGS)  src/SHARDS.c -o $@
 
-splay.o: splay.c
-	$(CC) -g -c -Wall $(CFLAGS) $(LFLAGS)  splay.c
+lib/libshardsc.a: obj/SHARDS.o
+	$(AR) $(ARFLAGS) $@ $^ 
+	
+obj/splay.o: src/splay.c include/splay.h
+	$(CC) -g -c $(CFLAGS) $(LFLAGS)  src/splay.c -o $@
 
-murmurhash3.o: murmurhash3.c 
-	$(CC) -g -c -Wall $(CFLAGS) $(LFLAGS)  murmurhash3.c
+obj/murmurhash3.o: src/murmurhash3.c include/murmurhash3.h
+	$(CC) -g -c $(CFLAGS) $(LFLAGS)  src/murmurhash3.c -o $@
 
-jenkins_hash.o: jenkins_hash.c
-	$(CC) -g -c -Wall $(CFLAGS) $(LFLAGS)  jenkins_hash.c
+obj/jenkins_hash.o: src/jenkins_hash.c include/jenkins_hash.h
+	$(CC) -g -c $(CFLAGS) $(LFLAGS)  src/jenkins_hash.c -o $@
