@@ -1,5 +1,5 @@
 #include "SHARDS.h"
-
+//Hola esto es una prueba
 SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_Type type){
 
 	//	Validation
