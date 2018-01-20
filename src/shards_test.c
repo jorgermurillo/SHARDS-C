@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include "SHARDS.h"
 
-
 int main(int argc, char** argv){
 
 	/*	argv[1] = length of each object.
@@ -41,29 +40,26 @@ int main(int argc, char** argv){
 	free(object);
 
     fclose(file);
-    SHARDS_free(shards);
-    return 0;
+
+
 	GHashTable *mrc = MRC_fixed_size_empty(shards);
 
 	
-
 	FILE *mrc_file = fopen(argv[5],"w");
 	GList *keys = g_hash_table_get_keys(mrc);
 	keys = g_list_sort(keys, (GCompareFunc) intcmp);
-
-	while(1){
+    GList *first = keys;
+	while(keys!=NULL){
 		//printf("%d,%1.7f\n",*(int*)keys->data, *(double*)g_hash_table_lookup(mrc, keys->data) );
 		fprintf(mrc_file,"%7d,%1.7f\n",*(int*)keys->data, *(double*)g_hash_table_lookup(mrc, keys->data) );
 
-		if(keys->next==NULL)
-			break;
+
 		keys=keys->next;
 	}
 	clock_t end_time = clock();
 	
 	fclose(mrc_file);
-	keys = g_list_first(keys);
-	g_list_free(keys);
+	g_list_free(first);
 	g_hash_table_destroy(mrc);
 	
 	printf("%ld\n", start_time);

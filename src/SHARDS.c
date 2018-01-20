@@ -1,6 +1,5 @@
 #include "SHARDS.h"
 
-
 SHARDS * SHARDS_new_init(double R_init, unsigned int bucket_size, object_Type type, unsigned int max_setsize, shards_version version){
     SHARDS *shards = (SHARDS *) malloc(sizeof(SHARDS));
     if(shards==NULL){
@@ -445,21 +444,20 @@ GHashTable *MRC(SHARDS *shards){
 		keys = g_list_first(keys);
 		total_sum = total_sum + part_sum;
 		//printf("TOTAL SUM: %u \n", total_sum);
-		keys= keys->next; //ignoring the zero (infinity) reuse dist
+		GList *first = keys;
+        keys= keys->next; //ignoring the zero (infinity) reuse dist
 		missrate = NULL;
-		while(1){	
+        
+		while(keys!=NULL){	
 			
 			missrate = g_hash_table_lookup(tabla, keys->data);
 			*missrate = 1.0 - (*missrate/total_sum);
 			//printf("%d %f\n", *(int*)keys->data, *missrate);
 			
-			if(keys->next ==NULL){
-				break;
-			}
+
 			keys= keys->next;		
 		}	
-		keys = g_list_first(keys);
-		g_list_free (keys);
+		g_list_free (first);
 
 		return tabla;
 } 
@@ -479,7 +477,11 @@ GHashTable *MRC_empty(SHARDS* shards){
 		unsigned int total_sum = *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
 		//printf("TOTAL SUM: %u \n", total_sum);
 		int hist_size = g_hash_table_size(shards->dist_histogram);
-
+        GList *first = keys;
+        
+        
+        
+        
 		if(hist_size > 1){	
 			//keys = keys->next;
 			remove_link = keys;
@@ -488,7 +490,7 @@ GHashTable *MRC_empty(SHARDS* shards){
 			g_hash_table_remove(shards->dist_histogram,remove_link->data);
 			free(remove_link->data);
 			g_list_free(remove_link);
-			while(1){	
+			while(keys!=NULL){	
 				//cache_size = malloc(sizeof(int));			
 				missrate = malloc(sizeof(double));
 				part_sum = part_sum + *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
@@ -497,18 +499,10 @@ GHashTable *MRC_empty(SHARDS* shards){
 				cache_size = (keys->data);
 				//printf("%d %f\n", *cache_size, *missrate);
 				g_hash_table_insert(tabla, cache_size, missrate);
-
-				if(keys->next ==NULL){
-					remove_link = keys;
-					keys = g_list_remove_link(keys,remove_link);
-					g_hash_table_remove(shards->dist_histogram,remove_link->data);
-					g_list_free(remove_link);
-
-					break;
-				}
 				//keys= keys->next;
 				remove_link = keys;
 				keys = g_list_remove_link(keys,remove_link);
+
 				g_hash_table_remove(shards->dist_histogram,remove_link->data);
 				g_list_free(remove_link);		
 			}
@@ -519,16 +513,12 @@ GHashTable *MRC_empty(SHARDS* shards){
 			//printf("TOTAL SUM: %u \n", total_sum);
 			
 			missrate = NULL;
-			while(1){	
+            first=keys;
+			while(keys!=NULL){	
 				
 				missrate = g_hash_table_lookup(tabla, keys->data);
 				*missrate = 1.0 - (*missrate/total_sum);
 				//printf("%d %f\n", *(int*)keys->data, *missrate);
-				
-				if(keys->next ==NULL){
-					
-					break;
-				}
 				keys= keys->next;
 						
 			}	
@@ -551,8 +541,7 @@ GHashTable *MRC_empty(SHARDS* shards){
 
 		}
 		
-		keys = g_list_first(keys);
-		g_list_free (keys);
+		g_list_free (first);
 
 		// Free the keys from time_table (object) which are also the data for the set_list that act as values for set_table
 		keys = g_hash_table_get_keys(shards->time_table);
