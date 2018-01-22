@@ -216,6 +216,26 @@ void printtree(Tree * t, int d) {
     printf("%d(%d)\n", t->key, t->size);
     printtree(t->left, d+1);
 }
+/*
+calc_distnce() implemented by Jorge Murillo, 2017
+
+This function takes a key and returns the numbers of keys that have a greater or equal value than that given. 
+For SHARDS, the key is the Timestamp of the reference to a object in the trace (1 for the first object, 2 for the second, etc.) and the returned value
+is the reuse distance of that reference.
+For example: If we have a trace with the following objects
+
+        a   b   c   a   d   d   b
+                    ^
+For the 5th object read in the trace ( the second instance of 'a'), we call calc_distance(5, dist_tree), and the returned value will be 3. Because the tree would look like: 
+
+            c
+           /
+          b
+         /
+        a 
+
+Meaning that there are at least three values equal or greater than a.
+*/
 int calc_distance(T timestamp, Tree *t){
 
 	int d = 1;

@@ -31,6 +31,7 @@ Tree * delete(T i, Tree *t);
 Tree * find_rank(T r, Tree *t); 
 void printtree(Tree * t, int d); 
 void freetree(Tree* t);
+//calc_distance() implemented by Jorge Murillo, 2017.
 int calc_distance(T timestamp, Tree *t);
 #endif 
 
