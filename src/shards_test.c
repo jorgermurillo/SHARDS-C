@@ -5,11 +5,10 @@
 #include <stdint.h>
 #include "SHARDS.h"
 
-
 int main(int argc, char** argv){
 
 	/*	argv[1] = length of each object.
-		argv[2] =  bucket size
+		argv[2] = bucket size
 		argv[3] = R
 		argv[4] = Tracefile
 		argv[5] = mrc file 
@@ -37,40 +36,41 @@ int main(int argc, char** argv){
 		SHARDS_feed_obj(shards, object, obj_length);
 		
 		object = (char*)calloc((obj_length+2),sizeof(char));
-			
 	}
+	free(object);
+
+    fclose(file);
+
 
 	GHashTable *mrc = MRC_fixed_size_empty(shards);
 
 	
-
 	FILE *mrc_file = fopen(argv[5],"w");
 	GList *keys = g_hash_table_get_keys(mrc);
 	keys = g_list_sort(keys, (GCompareFunc) intcmp);
-
-	while(1){
+    GList *first = keys;
+	while(keys!=NULL){
 		//printf("%d,%1.7f\n",*(int*)keys->data, *(double*)g_hash_table_lookup(mrc, keys->data) );
 		fprintf(mrc_file,"%7d,%1.7f\n",*(int*)keys->data, *(double*)g_hash_table_lookup(mrc, keys->data) );
 
-		if(keys->next==NULL)
-			break;
+
 		keys=keys->next;
 	}
 	clock_t end_time = clock();
-	fclose(file);
+	
 	fclose(mrc_file);
-	keys = g_list_first(keys);
-	g_list_free(keys);
+	g_list_free(first);
 	g_hash_table_destroy(mrc);
-	SHARDS_free(shards);
-	printf("%f\n", start_time);
-	printf("%f\n", end_time);
+	
+	printf("%ld\n", start_time);
+	printf("%ld\n", end_time);
 	int total_time = ((end_time - start_time))/CLOCKS_PER_SEC;
-	printf("TIME: %f\n", total_time);
+	printf("TIME: %d\n", total_time);
 	unsigned int objects_parsed =  shards->total_objects;
-
-	double throughput = objects_parsed/total_time;
-
+    
+	double throughput = objects_parsed/(total_time+1);
+    SHARDS_free(shards);
 	printf("Throughput: %f\n", throughput);
+    return 0;
 
 }
