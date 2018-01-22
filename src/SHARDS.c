@@ -1,32 +1,24 @@
 #include "SHARDS.h"
-//Hola esto es una prueba
-SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_Type type){
 
-	//	Validation
-	if(R_init<=0 || R_init > 1){
-		printf("Value of R must be in the range (0,1].\n");
-		return NULL;
-	}
-
-	
-
-	SHARDS *shards = malloc(sizeof(SHARDS));
-	shards->version = FIXED_RATE;
+SHARDS * SHARDS_new_init(double R_init, unsigned int bucket_size, object_Type type, unsigned int max_setsize, shards_version version){
+    SHARDS *shards = (SHARDS *) malloc(sizeof(SHARDS));
+    if(shards==NULL){
+        return NULL;
+    }
+	shards->version = version;
 	shards->dataType = type;
 	shards->initial_R_value = R_init; // Not really used in the fixed_rate version.
 	shards->R = R_init;
- 
-	uint64_t tmp = 1;
+    
+    uint64_t tmp = 1;
 	tmp = tmp <<24;
 	shards->P = tmp;
-
-	shards->T = R_init*tmp;
+    
+    shards->T = R_init*tmp;
 
 	shards->bucket_size = bucket_size;
-
-	shards->dist_tree = NULL;
-
-	switch(type){
+    
+    switch(type){
 		case String:
 			shards->time_table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, ( GDestroyNotify )free);
 			break;
@@ -41,23 +33,42 @@ SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_T
 			break;
 		
 	}
-
-	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
-
-	shards->set_table = NULL;	
-	shards->set_tree = NULL;
-	shards->set_list = NULL;
-	shards->set_list_search = NULL;
-
-	shards->S_max = 0;
 	
-	shards->set_size= 0;
+	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
+    shards->set_size= 0;
 	shards->evic_obj = 0; 
 	
-
 	shards->total_objects = 0;
 	shards->num_obj = 0;
 	shards->fraction = 0;
+    shards->S_max = max_setsize;
+    
+    
+    shards->dist_tree = NULL;
+    shards->set_tree = NULL;
+    shards->set_list = NULL;
+    shards->set_list_search = NULL;
+    
+    if(shards->version ==FIXED_SIZE){
+        shards->set_table = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, ( GDestroyNotify )g_list_free);
+        
+    }else{
+        shards->set_table = NULL;
+    }
+    
+    return shards;
+}
+
+SHARDS* SHARDS_fixed_rate_init(double R_init, unsigned int bucket_size, object_Type type){
+
+	//	Validation
+	if(R_init<=0 || R_init > 1){
+		printf("Value of R must be in the range (0,1].\n");
+		return NULL;
+	}
+	
+	SHARDS *shards = SHARDS_new_init(R_init,bucket_size,type,0, FIXED_RATE);
+	
 
 	return shards;
 }
@@ -70,58 +81,10 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 		return NULL;
 	}
 	
+	SHARDS *shards = SHARDS_new_init(0.1,bucket_size,type,max_setsize, FIXED_SIZE);
 
-	SHARDS *shards = malloc(sizeof(SHARDS));
-	shards->version = FIXED_SIZE;
-	shards->dataType = type;
-	shards->S_max = max_setsize;
-
-	shards->initial_R_value = 0.1;
-	shards->R = 0.1;
-
-	uint64_t tmp = 1;
-	tmp = tmp <<24;
-	shards->P = tmp;
-
-	shards->T = (shards->R)*tmp;
-
-	shards->bucket_size = bucket_size;
+    
 	
-	shards->dist_tree = NULL;
-
-	switch(type){
-		case String:
-			shards->time_table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, ( GDestroyNotify )free);
-			break;
-		case Int:
-			shards->time_table = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
-			break;
-		case Uint64:
-			shards->time_table = g_hash_table_new_full(g_uint64_hash, g_uint64_equal, NULL, ( GDestroyNotify )free);		
-			break;
-		case Double:
-			shards->time_table = g_hash_table_new_full(g_double_hash, g_double_equal, NULL, ( GDestroyNotify )free);
-			break;
-		
-	}
-
-	shards->dist_histogram = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, ( GDestroyNotify )free);
-
-	shards->set_table = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, ( GDestroyNotify )g_list_free);
-	shards->set_tree = NULL;
-	shards->set_list = NULL;
-	shards->set_list_search = NULL;
-
-	shards->set_size= 0;
-	shards->evic_obj = 0; 
-	
-
-	shards->total_objects = 0;
-	shards->num_obj = 0;
-	shards->fraction = 0;
-
-	//fprintf(stderr,"R: %f\n", shards->R);
-	//fprintf(stderr,"T: %"PRIu64"\n", shards->T);
 	return shards;
 
 
@@ -129,20 +92,11 @@ SHARDS* SHARDS_fixed_size_init(unsigned int max_setsize, unsigned int bucket_siz
 
 SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsigned int bucket_size, object_Type type){
 
-	if(R_init<=0 || R_init > 1){
+	if(R_init<=0 || R_init > 1 || max_setsize<=0){
 		return NULL;
 	}
 
-	if(max_setsize<=0 ){
-		return NULL;
-	}
-	
-	SHARDS *shards = SHARDS_fixed_size_init(max_setsize, bucket_size, type);
-	shards->dataType = type;
-	shards->initial_R_value = R_init;
-	shards->R = R_init;
-	
-	shards->T = R_init*(shards->P);
+	SHARDS *shards = SHARDS_new_init(R_init,bucket_size,type,max_setsize, FIXED_SIZE);
 	
 	return shards;
 
@@ -196,7 +150,6 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 			 	shards->set_list = g_hash_table_lookup(shards->set_table, shards->set_tree);
 			 	//If the search returns NULL (e.g the list doesnt exist), create a list and insert it
 			 	if(shards->set_list==NULL){
-
 			 		shards->set_list = g_list_append(shards->set_list, object);
 			 		g_hash_table_insert(shards->set_table, shards->set_tree ,shards->set_list);
 			 		shards->set_size++;
@@ -312,16 +265,23 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 void SHARDS_free(SHARDS* shards){
 
 		if(shards->version==FIXED_SIZE){
+            GList *keys=NULL;
+            
 			if(shards->dist_histogram!=NULL){
+                keys = g_hash_table_get_keys(shards->dist_histogram);
+            
+                if(keys!=NULL){
+                    g_list_free_full(keys, (GDestroyNotify)free);
+                }
 				g_hash_table_destroy(shards->dist_histogram);
-
-			}
-			GList *keys = g_hash_table_get_keys(shards->time_table);
-			if(keys!=NULL){
-				g_list_free_full(keys, (GDestroyNotify)free);
 			}
 			
+			
 			if(shards->time_table!=NULL){
+                keys = g_hash_table_get_keys(shards->time_table);
+                if(keys!=NULL){
+                    g_list_free_full(keys, (GDestroyNotify)free);
+                }
 				g_hash_table_destroy(shards->time_table);
 
 			}
@@ -330,12 +290,9 @@ void SHARDS_free(SHARDS* shards){
 				g_hash_table_destroy(shards->set_table);
 			}
 		
-			freetree(shards->dist_tree);
-			shards->dist_tree=NULL;
+			
 			freetree(shards->set_tree);
 			shards->set_tree=NULL;
-
-			free(shards);
 		
 		}else{
 
@@ -352,10 +309,12 @@ void SHARDS_free(SHARDS* shards){
 				g_hash_table_destroy(shards->time_table);
 
 			}
-			freetree(shards->dist_tree);
-			free(shards);
+			
 		}
-
+		
+		freetree(shards->dist_tree);
+        shards->dist_tree=NULL;
+        free(shards);
 
 		
 
@@ -439,7 +398,6 @@ void update_dist_table_fixed_size(uint64_t  reuse_dist, GHashTable **dist_table,
 			*dist = reuse_dist;
 			g_hash_table_insert(*dist_table, dist, x);
 			//printf("hashtable value: %d\n", *(int*)g_hash_table_lookup(*dist_table, &reuse_dist));
-
 		}else{
 			T_old = x[1];
 			if(T_old!=T_new){
@@ -486,21 +444,20 @@ GHashTable *MRC(SHARDS *shards){
 		keys = g_list_first(keys);
 		total_sum = total_sum + part_sum;
 		//printf("TOTAL SUM: %u \n", total_sum);
-		keys= keys->next; //ignoring the zero (infinity) reuse dist
+		GList *first = keys;
+        keys= keys->next; //ignoring the zero (infinity) reuse dist
 		missrate = NULL;
-		while(1){	
+        
+		while(keys!=NULL){	
 			
 			missrate = g_hash_table_lookup(tabla, keys->data);
 			*missrate = 1.0 - (*missrate/total_sum);
 			//printf("%d %f\n", *(int*)keys->data, *missrate);
 			
-			if(keys->next ==NULL){
-				break;
-			}
+
 			keys= keys->next;		
 		}	
-		keys = g_list_first(keys);
-		g_list_free (keys);
+		g_list_free (first);
 
 		return tabla;
 } 
@@ -520,7 +477,11 @@ GHashTable *MRC_empty(SHARDS* shards){
 		unsigned int total_sum = *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
 		//printf("TOTAL SUM: %u \n", total_sum);
 		int hist_size = g_hash_table_size(shards->dist_histogram);
-
+        GList *first = keys;
+        
+        
+        
+        
 		if(hist_size > 1){	
 			//keys = keys->next;
 			remove_link = keys;
@@ -529,7 +490,7 @@ GHashTable *MRC_empty(SHARDS* shards){
 			g_hash_table_remove(shards->dist_histogram,remove_link->data);
 			free(remove_link->data);
 			g_list_free(remove_link);
-			while(1){	
+			while(keys!=NULL){	
 				//cache_size = malloc(sizeof(int));			
 				missrate = malloc(sizeof(double));
 				part_sum = part_sum + *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
@@ -538,18 +499,10 @@ GHashTable *MRC_empty(SHARDS* shards){
 				cache_size = (keys->data);
 				//printf("%d %f\n", *cache_size, *missrate);
 				g_hash_table_insert(tabla, cache_size, missrate);
-
-				if(keys->next ==NULL){
-					remove_link = keys;
-					keys = g_list_remove_link(keys,remove_link);
-					g_hash_table_remove(shards->dist_histogram,remove_link->data);
-					g_list_free(remove_link);
-
-					break;
-				}
 				//keys= keys->next;
 				remove_link = keys;
 				keys = g_list_remove_link(keys,remove_link);
+
 				g_hash_table_remove(shards->dist_histogram,remove_link->data);
 				g_list_free(remove_link);		
 			}
@@ -560,16 +513,12 @@ GHashTable *MRC_empty(SHARDS* shards){
 			//printf("TOTAL SUM: %u \n", total_sum);
 			
 			missrate = NULL;
-			while(1){	
+            first=keys;
+			while(keys!=NULL){	
 				
 				missrate = g_hash_table_lookup(tabla, keys->data);
 				*missrate = 1.0 - (*missrate/total_sum);
 				//printf("%d %f\n", *(int*)keys->data, *missrate);
-				
-				if(keys->next ==NULL){
-					
-					break;
-				}
 				keys= keys->next;
 						
 			}	
@@ -592,8 +541,7 @@ GHashTable *MRC_empty(SHARDS* shards){
 
 		}
 		
-		keys = g_list_first(keys);
-		g_list_free (keys);
+		g_list_free (first);
 
 		// Free the keys from time_table (object) which are also the data for the set_list that act as values for set_table
 		keys = g_hash_table_get_keys(shards->time_table);
