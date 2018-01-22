@@ -13,7 +13,7 @@ Also, it uses an implementation of the top-down splaying binary tree with sizes 
 - [ ] Restructure the project as a shared and a static library.
 This work was done as part of a larger project for Dr. Cristina Abad (https://sites.google.com/site/cristinaabad/). 
 
-## Instrunctions on how to use SHARDS
+## Instructions on how to use SHARDS
 
 To construct a Miss Rate Curve using SHARDS, you first need to declare a SHARDS element and initialize it using one of the three initilization functions. There are two versions of SHARDS:  Fixed-Rate and Fixed-Size. Generally speaking you want to use the Fixed-Size version, as it has a limit on the amount of memory it uses, the other version I implemented in order to understand the algorithm. To initialize a SHARDS Fixed-Size structure you write:
 ```
