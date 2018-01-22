@@ -7,9 +7,8 @@
 #include <glib.h>
 #include <string.h>
 #include <stdint.h>
-#include "murmurhash3.h"
-#include "splay.h"
 #include <inttypes.h>
+#include "shards_utils.h"
 
 typedef enum{
 	FIXED_RATE,

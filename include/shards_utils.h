@@ -1,12 +1,24 @@
+#ifndef SHARDS_UTILS
+#define SHARDS_UTILS
+
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
+ //  vvvvvvvvvvvvv This is  murmurhash3.h vvvvvvvvvvvvv
+bool qhashmurmur3_128(const void *data, size_t nbytes, void *retbuf);
+
+// vvvvvvvvvvvvv This is splay.h vvvvvvvvvvvvv
+
 /*
            An implementation of top-down splaying with sizes
              D. Sleator <sleator@cs.cmu.edu>, January 1994.
 Modified a little by Qingpeng Niu for tracing the global chunck library memory use. Just add a compute sum of size from search node to the right most node.
 */
-#ifndef _splay_h
-#define _splay_h
-#include <stdio.h>
-#include <stdlib.h>
+
+
+
+
 //#pragma warning(disable:593)
 typedef struct tree_node Tree;
 typedef int T;
