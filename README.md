@@ -17,7 +17,7 @@ This work was done as part of a larger project for Dr. Cristina Abad (https://si
 ## Installation
 SHARDS-C needs GCC 5 or greater to compile and [GLIB](https://developer.gnome.org/glib/stable/) as a dependency.
 
-SHARDS-C can be compiled as a static and a dynamic library. To get either version write in
+SHARDS-C can be compiled as a static and a dynamic library. To get either version write in the command line:
 
 ```
 	make dynamic
@@ -26,14 +26,14 @@ or
 ```
 	make static
 ```
-The appropiate library file (libSHARDS.a or libSHARDS.so) will reside in the lib directory. Afterwards you can either copy the library file and the SHARDS.h to the standard path:
+The appropiate library file (libSHARDS.so or libSHARDS.a) will reside in the lib directory. Afterwards you can either copy the library file and the SHARDS.h to the standard path:
 
 ```
 	sudo cp lib/libSHARDS.* /usr/local/lib
 	sudo cp /include/SHARDS.h /usr/local/include
 ```
 
-Alternatively, just put the files in a folder (or leave them in /lib/) and add that directory to LIBRARY_PATH (for the static library, libSHARDS.a) and/or to LD_LIBRARY_PATH (for the shared library, libSHARDS.so). With this method you will have to include the SHARDS.h file in thedirectory of the project that will use this library.
+Alternatively, just put the files in a folder (or leave them in /lib/) and add that directory to LIBRARY_PATH (for the static library, libSHARDS.a) and/or to LD_LIBRARY_PATH (for the shared library, libSHARDS.so). With this method you will have to include the SHARDS.h file in the directory of the project that will use this library.
 
 ## Instructions on how to use SHARDS
 
