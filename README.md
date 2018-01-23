@@ -15,7 +15,7 @@ This work was done as part of a larger project for Dr. Cristina Abad (https://si
 - [X] Restructure the project as a shared and a static library.
 
 ## Installation
-SHARDS-c needs GCC 5 or greater to compile and [GLIB](https://developer.gnome.org/glib/stable/) as a dependency.
+SHARDS-C needs GCC 5 or greater to compile and [GLIB](https://developer.gnome.org/glib/stable/) as a dependency.
 
 SHARDS-C can be compiled as a static and a dynamic library. To get either version write in
 
