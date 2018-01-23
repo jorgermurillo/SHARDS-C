@@ -101,7 +101,9 @@ SHARDS* SHARDS_fixed_size_init_R(unsigned int  max_setsize, double R_init, unsig
 	return shards;
 
 }
-
+/* 
+This function inserts an object into SHARDS for it to be processed.
+*/
 void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 
 		shards->total_objects++;
@@ -261,7 +263,9 @@ void SHARDS_feed_obj(SHARDS *shards, void* object, size_t nbytes){
 
 		}
 }
-
+/*
+	This function frees the SHARDS data structure
+*/
 void SHARDS_free(SHARDS* shards){
 
 		if(shards->version==FIXED_SIZE){
@@ -320,7 +324,19 @@ void SHARDS_free(SHARDS* shards){
 
 
 }
+/*
+	This function calculates the resude distance of a reference to an object in the trace/workload. Reuse distance is the number of unique objects in a trace between 
+	the new reference and the last reference to the same object. Objects appearing for the first time have a reuse distance of infinity (here represented by zero). 
+	All reuse distances are positive.
 
+	For example:
+
+		a   	b   	c   	a   	d   	d   	b
+		0(inf)	0(inf)	0(inf)	3		0(inf)	1		4	
+
+	The character above represent a workload/trace, the values below are the reuse distnce of each of the references.
+
+*/
 unsigned int calc_reuse_dist(void *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version){
 
 		
@@ -361,9 +377,9 @@ unsigned int calc_reuse_dist(void *object, unsigned int num_obj, GHashTable **ti
 		return reuse_dist;
 }
 
-
-
-
+/*
+	This function updates the reuse distance hashtable for the Fixed-Rate version of SHARDS.
+*/
 void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table){
 	
 	uint64_t *x = (uint64_t*) g_hash_table_lookup(*dist_table, &reuse_dist);
@@ -383,6 +399,10 @@ void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table){
 	}
 }
 
+/*
+	This function updates the reuse distance hashtable in the Fixed-Size version of SHARDS. The difference with the above is that it stores the current value 
+	of T with the reuse distance.
+*/
 void update_dist_table_fixed_size(uint64_t  reuse_dist, GHashTable **dist_table, uint64_t T_new){
 		
 		uint64_t *x = (uint64_t*) g_hash_table_lookup(*dist_table, &reuse_dist);
@@ -411,6 +431,10 @@ void update_dist_table_fixed_size(uint64_t  reuse_dist, GHashTable **dist_table,
 			
 		}
 }
+
+/*
+	Creates MRC for the Fixed-Rate version of SHARDS.
+*/
 
 GHashTable *MRC(SHARDS *shards){
 
@@ -461,6 +485,10 @@ GHashTable *MRC(SHARDS *shards){
 
 		return tabla;
 } 
+
+/*
+	Creates MRC for the Fixed-Rate version of SHARDS and empities (but does not free) the internal data structures.
+*/
 
 GHashTable *MRC_empty(SHARDS* shards){
 
@@ -561,10 +589,14 @@ GHashTable *MRC_empty(SHARDS* shards){
 		return tabla;
 }
 
+/*
+	Creates MRC for the Fixed-Size version of SHARDS.
+*/
 
 GHashTable *MRC_fixed_size(SHARDS *shards){
 
 		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
+		GList *tmp_keys =keys;
 		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
 		keys = g_list_sort(keys, (GCompareFunc) intcmp );
 		uint64_t T_new = shards->T;
@@ -618,21 +650,24 @@ GHashTable *MRC_fixed_size(SHARDS *shards){
 			}
 		
 
-		keys = g_list_first(keys);
+		//keys = g_list_first(keys);
+		keys = tmp_keys;
+		
 		total_sum = total_sum + part_sum;
 		//printf("TOTAL SUM: %u \n", total_sum);
 		
 			keys= keys->next; //ignoring the zero (infinity) reuse dist
 			missrate = NULL; //We are gonna use miss_rate again as a temp variable
-			while(1){	
+			while(keys!=NULL){	
 				
 				missrate = g_hash_table_lookup(tabla, keys->data);
 				*missrate = 1.0 - (*missrate/total_sum);
 				//printf("%d %f\n", *(int*)keys->data, *missrate);
-				
+				/*
 				if(keys->next ==NULL){
 					break;
 				}
+				*/
 				keys= keys->next;		
 			}
 		}else{
@@ -646,16 +681,21 @@ GHashTable *MRC_fixed_size(SHARDS *shards){
 			g_hash_table_insert(tabla, cache_size, missrate);
 			
 		}
-		keys = g_list_first(keys);
-		g_list_free (keys);
+		//keys = g_list_first(keys);
+		g_list_free (tmp_keys);
 
 		return tabla;
 }
+
+/*
+	Creates MRC for the Fixed-Size version of SHARDS and empities (but does not free) the internal data structures.
+*/
 
 GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 
 
 		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
+		GList *tmp_keys ;
 		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
 		keys = g_list_sort(keys, (GCompareFunc) intcmp );
 		uint64_t T_new = shards->T;
@@ -667,14 +707,9 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 		int *cache_size = NULL; 
 		uint64_t  total_sum = 0;
 		uint64_t part_sum = 0;
-		//int t =0;
-		//printf("Number of unique objects: %d\n", *(int*)g_hash_table_lookup(shards->dist_histogram, &t) );
+		
 		unsigned int hist_size = g_hash_table_size (shards->dist_histogram);
 
-		
-		//printf("TOTAL SUM: %u \n", total_sum);
-
-		//printf("cache size: %d total_sum: %"PRIu64" T: %"PRIu64" T_new %"PRIu64" \n", *(int*)keys->data, total_sum, hist_value[1], T_new);
 		if(hist_size > 1){
 			
 			uint64_t *hist_value = (g_hash_table_lookup(shards->dist_histogram, keys->data) );	
@@ -740,41 +775,41 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 			
 			keys = g_hash_table_get_keys(tabla);
 			keys = g_list_sort(keys, (GCompareFunc) intcmp );
+			tmp_keys = keys;
 			//keys = g_list_first(keys);
 			total_sum = total_sum + part_sum;
 			//printf("TOTAL SUM: %u \n", total_sum);
 		
 			
 			missrate = NULL; //We are gonna use miss_rate again as a temp variable
-			while(1){	
+			while(keys!=NULL){	
 				
 				missrate = g_hash_table_lookup(tabla, keys->data);
 				*missrate = 1.0 - (*missrate/total_sum);
 				//printf("%d %f\n", *(int*)keys->data, *missrate);
-				
+				/*
 				if(keys->next ==NULL){
 					break;
 				}
+				*/
 				keys= keys->next;		
 			}
 		}else if(hist_size == 1){
 
-			//	if hist_size == 1	
-			//printf("WHATSUP\n");
 			cache_size = malloc(sizeof(int));			
 			missrate = malloc(sizeof(double));
 			*cache_size = *(int*)(keys->data);
 			*missrate = 1.0;
 			g_hash_table_insert(tabla, cache_size, missrate);
-			//printf("GETOUT\n");
+			
 		}else{
 			//printf("The reuse distance histogram (dist_histogram) is empty");
 			return NULL;
 
 		}
-		keys = g_list_first(keys);
-		g_list_free (keys);
-
+		//keys = g_list_first(keys);
+		g_list_free (tmp_keys);
+		tmp_keys = NULL;
 		// Free the keys from time_table (object) which are also the data for the set_list that act as values for set_table
 		keys = g_hash_table_get_keys(shards->time_table);
 		g_list_free_full (keys, (GDestroyNotify) free);

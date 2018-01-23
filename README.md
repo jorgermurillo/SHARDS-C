@@ -11,9 +11,27 @@ This work was done as part of a larger project for Dr. Cristina Abad (https://si
 ### TODO
 
 - [ ] Implement the SHARDS_adj, to deal with the error produced by vertical shifts of the estimated curve.
-- [ ] Implement a function that returns the updated reuse distance distribution from the SHARDS_fixed_size version (It doesnt automatically update after an eviction).
-- [ ] Restructure the project as a shared and a static library.
+- [ ] Implement a function that returns the updated reuse distance distribution from the SHARDS_fixed_size version, in case someone cares about reuse distances and not the MRC.
+- [X] Restructure the project as a shared and a static library.
 
+## Installation
+SHARDS-c needs GCC 5 or greater to compile and the GLIB library as a dependency.
+
+SHARDS-C can be compiled as a static and a dynamic library. To get either version write in
+
+```
+	make dynamic
+```
+or
+```
+	make static
+```
+The appropiate library file (libSHARDS.a or libSHARDS.so) will reside in the lib directory. Afterwards you can either copy the library file and the SHARDS.h to the standard path:
+
+```
+	sudo cp lib/libSHARDS.* /usr/local/lib
+	sudo cp /include/SHARDS.h /usr/local/include
+```
 
 ## Instructions on how to use SHARDS
 
