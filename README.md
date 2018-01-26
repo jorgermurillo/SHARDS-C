@@ -63,13 +63,13 @@ Now that the SHARDS element is initialized, you just need to feed it the objects
 Once you finished feeding the objects of the workload, you can construct the MRC by using the following function: 
 
 ```
-	MRC_fixed_size(shards);
+	MRC(shards);
 ```
 
 or
 
 ```
-	MRC_fixed_size_empty(shards);
+	MRC_empty(shards);
 ```
 
 The first one returns a GHashTable with the key-value pairs [size : MissRate]. The second function does the same, but in addition it erases all the data from the internal data structures, such that you can start another analyzing another workload in order to estimate its MRC.

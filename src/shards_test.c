@@ -42,7 +42,7 @@ int main(int argc, char** argv){
     fclose(file);
 
 
-	GHashTable *mrc = MRC_fixed_size_empty(shards);
+	GHashTable *mrc = MRC_empty(shards);
 
 	
 	FILE *mrc_file = fopen(argv[5],"w");

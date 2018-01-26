@@ -88,6 +88,10 @@ GHashTable *MRC(SHARDS* shards);
 
 GHashTable *MRC_empty(SHARDS* shards);
 
+GHashTable *MRC_fixed_rate(SHARDS* shards);
+
+GHashTable *MRC_fixed_rate_empty(SHARDS* shards);
+
 GHashTable *MRC_fixed_size(SHARDS *shards);
 
 GHashTable *MRC_fixed_size_empty(SHARDS *shards);

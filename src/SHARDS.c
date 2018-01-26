@@ -436,7 +436,7 @@ void update_dist_table_fixed_size(uint64_t  reuse_dist, GHashTable **dist_table,
 	Creates MRC for the Fixed-Rate version of SHARDS.
 */
 
-GHashTable *MRC(SHARDS *shards){
+GHashTable *MRC_fixed_rate(SHARDS *shards){
 
 		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
 		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
@@ -486,11 +486,32 @@ GHashTable *MRC(SHARDS *shards){
 		return tabla;
 } 
 
+
+GHashTable *MRC(SHARDS* shards){
+
+		if(shards->version==FIXED_RATE){
+			return MRC_fixed_rate(shards);
+		}else{
+			return MRC_fixed_size(shards);
+		}
+
+}
+
+GHashTable *MRC_empty(SHARDS* shards){
+
+		if(shards->version==FIXED_RATE){
+			return MRC_fixed_rate_empty(shards);
+		}else{
+			return MRC_fixed_size_empty(shards);
+		}
+}
+
+
 /*
 	Creates MRC for the Fixed-Rate version of SHARDS and empities (but does not free) the internal data structures.
 */
 
-GHashTable *MRC_empty(SHARDS* shards){
+GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 
 		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
 		GList* remove_link=NULL;

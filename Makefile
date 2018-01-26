@@ -7,8 +7,8 @@ ARFLGAS=rcs
 
 dynamic: lib/libSHARDS.so
 	
-lib/libSHARDS.so: obj/murmurhash3.o obj/shard_utils.o
-	$(CC)  -g -fPIC  $(VERSION)  -Wextra -pedantic obj/murmurhash3.o obj/splay.o obj/SHARDS.o -shared $(CFLAGS) -o lib/libSHARDS.so
+lib/libSHARDS.so: obj/SHARDS.o obj/shard_utils.o
+	$(CC)  -g -fPIC  $(VERSION)  -Wextra -pedantic $^ -shared $(CFLAGS) -o lib/libSHARDS.so
 
 static: lib/libSHARDS.a
 	
