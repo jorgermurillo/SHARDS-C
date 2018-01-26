@@ -72,7 +72,7 @@ or
 	MRC_empty(shards);
 ```
 
-The first one returns a GHashTable with the key-value pairs [size : MissRate]. The second function does the same, but in addition it erases all the data from the internal data structures, such that you can start another analyzing another workload in order to estimate its MRC.
+The first one returns a GHashTable with the key-value pairs [size : MissRate]. The second function does the same, but in addition it erases all the data from the internal data structures, such that you can start analyzing another workload in order to estimate its MRC.
 
 Once finished, you can free the SHARDS structure with 
 
