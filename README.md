@@ -1,12 +1,12 @@
 # SHARDS-C
 
-This is an implementation of the SHARDS algorithm written in C. It is used to estimate the Miss Rate Curve for a cache using a stack algorithm (LRU, LFU, MRU but this implementation works only with LRU) as a eviction policy. To read more on SHARDS, check out the following link: https://www.usenix.org/system/files/conference/fast15/fast15-paper-waldspurger.pdf
+This is an implementation of the SHARDS algorithm written in C. It is used to estimate the Miss Rate Curve for a cache using a stack algorithm (LRU, LFU, MRU but this implementation works only with LRU) as a eviction policy. To read more on SHARDS, check out this [link](https://www.usenix.org/system/files/conference/fast15/fast15-paper-waldspurger.pdf).
 
-It uses [Glib](https://developer.gnome.org/glib/stable/) for most of the data structures.
+It uses [GLib](https://developer.gnome.org/glib/stable/) for most of the data structures.
 
 It uses an implementation of the top-down splaying binary tree with sizes ( D. Sleator <sleator@cs.cmu.edu>, January 1994.), taken from the [PARDA repository](https://bitbucket.org/trauzti/parda). I modified it further so that it could calculate the sum of the sizes from the search node to the right most node. It also uses the [qLibc](https://github.com/wolkykim/qlibc) imlementation of the 128-bit murmurhash3 function.
 
-This work was done as part of a larger project for Dr. Cristina Abad (https://sites.google.com/site/cristinaabad/). 
+This work was done as part of a larger project for [Dr. Cristina Abad](https://sites.google.com/site/cristinaabad/). 
 
 ### TODO
 
@@ -15,7 +15,7 @@ This work was done as part of a larger project for Dr. Cristina Abad (https://si
 - [X] Restructure the project as a shared and a static library.
 
 ## Installation
-SHARDS-C needs GCC 5 or greater to compile and [GLIB](https://developer.gnome.org/glib/stable/) as a dependency.
+SHARDS-C needs GCC 5 or greater to compile and [GLib](https://developer.gnome.org/glib/stable/) as a dependency.
 
 SHARDS-C can be compiled as a static and a dynamic library. To get either version write in the command line:
 
@@ -38,7 +38,7 @@ Alternatively, just put the files in a folder (or leave them in /lib/) and add t
 
 ## Instructions on how to use SHARDS
 
-To construct a Miss Rate Curve using SHARDS, you first need to declare a SHARDS element and initialize it using one of the three initilization functions. There are two versions of SHARDS:  Fixed-Rate and Fixed-Size. Generally speaking you want to use the Fixed-Size version, as it has a limit on the amount of memory it uses, the other version I implemented in order to understand the algorithm. To initialize a SHARDS Fixed-Size structure you write:
+To construct a Miss Rate Curve using SHARDS, you first need to declare a SHARDS element and initialize it using one of the three initilization functions. There are two versions of SHARDS:  Fixed-Rate and Fixed-Size. Generally speaking you want to use the Fixed-Size version, as it has a limit on the amount of memory it uses; the other version I implemented in order to understand the algorithm. To initialize a SHARDS Fixed-Size structure you write:
 ```
 	SHARDS* shards = SHARDS* SHARDS_fixed_size_init(16000, 10, String);
 ```
