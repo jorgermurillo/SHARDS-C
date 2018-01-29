@@ -1,5 +1,154 @@
 #include "SHARDS.h"
 
+/*
+	This function calculates the resude distance of a reference to an object in the trace/workload. Reuse distance is the number of unique objects in a trace between 
+	the new reference and the last reference to the same object. Objects appearing for the first time have a reuse distance of infinity (here represented by zero). 
+	All reuse distances are positive.
+
+	For example:
+
+		a   	b   	c   	a   	d   	d   	b
+		0(inf)	0(inf)	0(inf)	3		0(inf)	1		4	
+
+	The character above represent a workload/trace, the values below are the reuse distnce of each of the references.
+
+*/
+unsigned int calc_reuse_dist(void *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version){
+
+		
+		unsigned int reuse_dist=0;
+
+		unsigned int *time_table_value =(unsigned int*) g_hash_table_lookup(*time_table, object);
+		unsigned int* num_obj_ptr = malloc(sizeof(unsigned int));
+		*num_obj_ptr = num_obj;
+		//snprintf(num_obj_str,15*sizeof(char), "%u", num_obj);
+
+		if(time_table_value==NULL){
+
+			g_hash_table_insert(*time_table, object,  num_obj_ptr);
+			*tree = insert(num_obj ,*tree);
+			reuse_dist=0;
+
+		}else{
+			//timestamp = strtol(time_table_value,NULL,10);
+			reuse_dist =(uint64_t) calc_distance( *time_table_value,*tree);
+			
+					//Busquemos la distancia de reuso en la hashtable distance_table
+					//snprintf(reuse_dist_str, 15*sizeof(char), "%"PRIu64"", reuse_dist);
+					//printf("%u \n", reuse_dist);
+					//delete old timestamp from tree
+			*tree = delete(*time_table_value ,*tree);
+						
+					//Insert new timestamp from tree
+			*tree = insert(num_obj ,*tree);
+			g_hash_table_insert(*time_table, object, num_obj_ptr);	
+			if(version == FIXED_RATE){
+				free(object);
+			}
+			
+		}
+
+		//printf("num_obj_ptr: %u \n", *num_obj_ptr);
+		
+		return reuse_dist;
+}
+
+/*
+	This function updates the reuse distance hashtable for the Fixed-Rate version of SHARDS.
+*/
+void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table){
+	
+	uint64_t *x = (uint64_t*) g_hash_table_lookup(*dist_table, &reuse_dist);
+	
+	if(x == NULL){
+		//printf("11111\n");
+		x = (uint64_t*)malloc(sizeof(uint64_t));
+		*x = 1;
+		uint64_t *dist = (uint64_t*)malloc(sizeof(uint64_t));
+		*dist = reuse_dist;
+		g_hash_table_insert(*dist_table, dist, x);
+		//printf("hashtable value: %d\n", *(int*)g_hash_table_lookup(*dist_table, &reuse_dist));
+
+	}else{
+		*x= *x + 1;
+		
+	}
+}
+
+/*
+	This function updates the reuse distance hashtable in the Fixed-Size version of SHARDS. The difference with the above is that it stores the current value 
+	of T with the reuse distance.
+*/
+void update_dist_table_fixed_size(uint64_t  reuse_dist, GHashTable **dist_table, uint64_t T_new){
+		
+		uint64_t *x = (uint64_t*) g_hash_table_lookup(*dist_table, &reuse_dist);
+		uint64_t T_old = 0;
+		double tmp =0; 
+		if(x == NULL){
+			//printf("11111\n");
+			x = (uint64_t*)malloc(2*sizeof(uint64_t));
+			x[0] = 1;
+			x[1] = T_new;
+			//printf("x[0]: %"PRIu64"  x[1]: %"PRIu64"\n",x[0],x[1]);
+			int *dist = (int*)malloc(sizeof(uint64_t));
+			*dist = reuse_dist;
+			g_hash_table_insert(*dist_table, dist, x);
+			//printf("hashtable value: %d\n", *(int*)g_hash_table_lookup(*dist_table, &reuse_dist));
+		}else{
+			T_old = x[1];
+			if(T_old!=T_new){
+				tmp = ((double)T_new) /T_old;
+				x[0] = (uint64_t) x[0]*tmp  + 1;
+				x[1] = T_new;
+			}
+
+			*x= *x + 1;
+			//printf("x[0]: %"PRIu64"  x[1]: %"PRIu64"\n",x[0],x[1]);
+			
+		}
+}
+
+int intcmp(const void *x, const void *y){
+		const int a = *(int*)x;
+		const int b = *(int*)y;
+		return (a < b) ? -1 : (a > b);
+}
+
+
+int uint64cmp(const void *x, const void *y){
+		const uint64_t a = *(uint64_t*)x;
+		const uint64_t b = *(uint64_t*)y;
+
+		if(a>b){
+			return 1;
+		}else if(a<b){
+			return -1;
+		}else{
+			return 0;
+		}
+}
+
+guint g_uint64_hash (gconstpointer v){
+  return (guint) *(const guint64*) v;
+}
+
+gboolean g_uint64_equal (gconstpointer v1, gconstpointer v2){
+  return *((const guint64*) v1) == *((const guint64*) v2);
+}
+
+int doublecmp(const void *x, const void *y){
+		const double a = *(double*)x;
+		const double b = *(double*)y;
+		return (a < b) ? -1 : (a > b);
+}
+
+
+bool dummy(void* x){
+	return true; 
+
+}
+
+
 SHARDS * SHARDS_new_init(double R_init, unsigned int bucket_size, object_Type type, unsigned int max_setsize, shards_version version){
     SHARDS *shards = (SHARDS *) malloc(sizeof(SHARDS));
     if(shards==NULL){
@@ -324,113 +473,7 @@ void SHARDS_free(SHARDS* shards){
 
 
 }
-/*
-	This function calculates the resude distance of a reference to an object in the trace/workload. Reuse distance is the number of unique objects in a trace between 
-	the new reference and the last reference to the same object. Objects appearing for the first time have a reuse distance of infinity (here represented by zero). 
-	All reuse distances are positive.
 
-	For example:
-
-		a   	b   	c   	a   	d   	d   	b
-		0(inf)	0(inf)	0(inf)	3		0(inf)	1		4	
-
-	The character above represent a workload/trace, the values below are the reuse distnce of each of the references.
-
-*/
-unsigned int calc_reuse_dist(void *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version){
-
-		
-		unsigned int reuse_dist=0;
-
-		unsigned int *time_table_value =(unsigned int*) g_hash_table_lookup(*time_table, object);
-		unsigned int* num_obj_ptr = malloc(sizeof(unsigned int));
-		*num_obj_ptr = num_obj;
-		//snprintf(num_obj_str,15*sizeof(char), "%u", num_obj);
-
-		if(time_table_value==NULL){
-
-			g_hash_table_insert(*time_table, object,  num_obj_ptr);
-			*tree = insert(num_obj ,*tree);
-			reuse_dist=0;
-
-		}else{
-			//timestamp = strtol(time_table_value,NULL,10);
-			reuse_dist =(uint64_t) calc_distance( *time_table_value,*tree);
-			
-					//Busquemos la distancia de reuso en la hashtable distance_table
-					//snprintf(reuse_dist_str, 15*sizeof(char), "%"PRIu64"", reuse_dist);
-					//printf("%u \n", reuse_dist);
-					//delete old timestamp from tree
-			*tree = delete(*time_table_value ,*tree);
-						
-					//Insert new timestamp from tree
-			*tree = insert(num_obj ,*tree);
-			g_hash_table_insert(*time_table, object, num_obj_ptr);	
-			if(version == FIXED_RATE){
-				free(object);
-			}
-			
-		}
-
-		//printf("num_obj_ptr: %u \n", *num_obj_ptr);
-		
-		return reuse_dist;
-}
-
-/*
-	This function updates the reuse distance hashtable for the Fixed-Rate version of SHARDS.
-*/
-void update_dist_table(uint64_t  reuse_dist ,GHashTable **dist_table){
-	
-	uint64_t *x = (uint64_t*) g_hash_table_lookup(*dist_table, &reuse_dist);
-	
-	if(x == NULL){
-		//printf("11111\n");
-		x = (uint64_t*)malloc(sizeof(uint64_t));
-		*x = 1;
-		uint64_t *dist = (uint64_t*)malloc(sizeof(uint64_t));
-		*dist = reuse_dist;
-		g_hash_table_insert(*dist_table, dist, x);
-		//printf("hashtable value: %d\n", *(int*)g_hash_table_lookup(*dist_table, &reuse_dist));
-
-	}else{
-		*x= *x + 1;
-		
-	}
-}
-
-/*
-	This function updates the reuse distance hashtable in the Fixed-Size version of SHARDS. The difference with the above is that it stores the current value 
-	of T with the reuse distance.
-*/
-void update_dist_table_fixed_size(uint64_t  reuse_dist, GHashTable **dist_table, uint64_t T_new){
-		
-		uint64_t *x = (uint64_t*) g_hash_table_lookup(*dist_table, &reuse_dist);
-		uint64_t T_old = 0;
-		double tmp =0; 
-		if(x == NULL){
-			//printf("11111\n");
-			x = (uint64_t*)malloc(2*sizeof(uint64_t));
-			x[0] = 1;
-			x[1] = T_new;
-			//printf("x[0]: %"PRIu64"  x[1]: %"PRIu64"\n",x[0],x[1]);
-			int *dist = (int*)malloc(sizeof(uint64_t));
-			*dist = reuse_dist;
-			g_hash_table_insert(*dist_table, dist, x);
-			//printf("hashtable value: %d\n", *(int*)g_hash_table_lookup(*dist_table, &reuse_dist));
-		}else{
-			T_old = x[1];
-			if(T_old!=T_new){
-				tmp = ((double)T_new) /T_old;
-				x[0] = (uint64_t) x[0]*tmp  + 1;
-				x[1] = T_new;
-			}
-
-			*x= *x + 1;
-			//printf("x[0]: %"PRIu64"  x[1]: %"PRIu64"\n",x[0],x[1]);
-			
-		}
-}
 
 /*
 	Creates MRC for the Fixed-Rate version of SHARDS.
@@ -486,25 +529,6 @@ GHashTable *MRC_fixed_rate(SHARDS *shards){
 		return tabla;
 } 
 
-
-GHashTable *MRC(SHARDS* shards){
-
-		if(shards->version==FIXED_RATE){
-			return MRC_fixed_rate(shards);
-		}else{
-			return MRC_fixed_size(shards);
-		}
-
-}
-
-GHashTable *MRC_empty(SHARDS* shards){
-
-		if(shards->version==FIXED_RATE){
-			return MRC_fixed_rate_empty(shards);
-		}else{
-			return MRC_fixed_size_empty(shards);
-		}
-}
 
 
 /*
@@ -862,43 +886,25 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 
 
 }
+ 
 
-int intcmp(const void *x, const void *y){
-		const int a = *(int*)x;
-		const int b = *(int*)y;
-		return (a < b) ? -1 : (a > b);
+GHashTable *MRC(SHARDS* shards){
+
+		if(shards->version==FIXED_RATE){
+			return MRC_fixed_rate(shards);
+		}else{
+			return MRC_fixed_size(shards);
+		}
+
 }
 
+GHashTable *MRC_empty(SHARDS* shards){
 
-int uint64cmp(const void *x, const void *y){
-		const uint64_t a = *(uint64_t*)x;
-		const uint64_t b = *(uint64_t*)y;
-
-		if(a>b){
-			return 1;
-		}else if(a<b){
-			return -1;
+		if(shards->version==FIXED_RATE){
+			return MRC_fixed_rate_empty(shards);
 		}else{
-			return 0;
+			return MRC_fixed_size_empty(shards);
 		}
 }
 
-guint g_uint64_hash (gconstpointer v){
-  return (guint) *(const guint64*) v;
-}
 
-gboolean g_uint64_equal (gconstpointer v1, gconstpointer v2){
-  return *((const guint64*) v1) == *((const guint64*) v2);
-}
-
-int doublecmp(const void *x, const void *y){
-		const double a = *(double*)x;
-		const double b = *(double*)y;
-		return (a < b) ? -1 : (a > b);
-}
-
-
-bool dummy(void* x){
-	return true; 
-
-}
