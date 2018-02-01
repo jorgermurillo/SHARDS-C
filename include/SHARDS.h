@@ -81,6 +81,17 @@ GHashTable *MRC(SHARDS* shards);
 
 GHashTable *MRC_empty(SHARDS* shards);
 
+int intcmp(const void *x, const void *y);
+
+int uint64cmp(const void *x, const void *y);
+
+guint g_uint64_hash (gconstpointer v);
+
+gboolean g_uint64_equal (gconstpointer v1, gconstpointer v2);
+
+int doublecmp(const void *x, const void *y);
+
+
 //private functions
 /*
 unsigned int calc_reuse_dist(void *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version);
@@ -98,15 +109,6 @@ GHashTable *MRC_fixed_size(SHARDS *shards);
 
 GHashTable *MRC_fixed_size_empty(SHARDS *shards);
 
-int intcmp(const void *x, const void *y);
-
-int uint64cmp(const void *x, const void *y);
-
-guint g_uint64_hash (gconstpointer v);
-
-gboolean g_uint64_equal (gconstpointer v1, gconstpointer v2);
-
-int doublecmp(const void *x, const void *y);
 
 bool dummy(void* x);
 */

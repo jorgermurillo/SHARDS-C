@@ -11,7 +11,7 @@
 		0(inf)	0(inf)	0(inf)	3		0(inf)	1		4	
 
 	The character above represent a workload/trace, the values below are the reuse distnce of each of the references.
-
+ 
 */
 unsigned int calc_reuse_dist(void *object, unsigned int num_obj, GHashTable **time_table, Tree **tree, shards_version version){
 
@@ -484,7 +484,7 @@ GHashTable *MRC_fixed_rate(SHARDS *shards){
 		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
 		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
 		keys = g_list_sort(keys, (GCompareFunc) intcmp );
-		
+		GList *tmp_keys = keys;
 
 		double *missrate = NULL;
 		int *cache_size = NULL;
@@ -508,10 +508,10 @@ GHashTable *MRC_fixed_rate(SHARDS *shards){
 			}
 			keys= keys->next;		
 		}
-		keys = g_list_first(keys);
+		keys = tmp_keys;
 		total_sum = total_sum + part_sum;
 		//printf("TOTAL SUM: %u \n", total_sum);
-		GList *first = keys;
+		
         keys= keys->next; //ignoring the zero (infinity) reuse dist
 		missrate = NULL;
         
@@ -524,7 +524,7 @@ GHashTable *MRC_fixed_rate(SHARDS *shards){
 
 			keys= keys->next;		
 		}	
-		g_list_free (first);
+		g_list_free (tmp_keys);
 
 		return tabla;
 } 
@@ -550,7 +550,7 @@ GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 		unsigned int total_sum = *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
 		//printf("TOTAL SUM: %u \n", total_sum);
 		int hist_size = g_hash_table_size(shards->dist_histogram);
-        GList *first = keys;
+        GList *tmp_keys = keys;
         
         
         
@@ -586,7 +586,7 @@ GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 			//printf("TOTAL SUM: %u \n", total_sum);
 			
 			missrate = NULL;
-            first=keys;
+            tmp_keys=keys;
 			while(keys!=NULL){	
 				
 				missrate = g_hash_table_lookup(tabla, keys->data);
@@ -614,7 +614,7 @@ GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 
 		}
 		
-		g_list_free (first);
+		g_list_free (tmp_keys);
 
 		// Free the keys from time_table (object) which are also the data for the set_list that act as values for set_table
 		keys = g_hash_table_get_keys(shards->time_table);
@@ -740,7 +740,7 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 
 
 		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
-		GList *tmp_keys ;
+		GList *tmp_keys = keys;
 		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
 		keys = g_list_sort(keys, (GCompareFunc) intcmp );
 		uint64_t T_new = shards->T;
