@@ -15,7 +15,7 @@ This work was done as part of a larger project for [Dr. Cristina Abad](https://s
 - [X] Restructure the project as a shared and a static library.
 
 ## Installation
-SHARDS-C needs GCC 5 or greater to compile and [GLib](https://developer.gnome.org/glib/stable/) as a dependency.
+SHARDS-C needs gcc 5 or greater to compile and [GLib](https://developer.gnome.org/glib/stable/) as a dependency.
 
 SHARDS-C can be compiled as a static and a dynamic library. To get either version write in the command line:
 
@@ -30,8 +30,8 @@ The appropiate library file (libSHARDS.so or libSHARDS.a) will reside in the lib
 
 ```
 	sudo cp lib/libSHARDS.* /usr/local/lib
-	sudo cp /include/SHARDS.h /usr/local/include
-	sudo cp /include/shards_utils.h /usr/local/include
+	sudo cp include/SHARDS.h /usr/local/include
+	sudo cp include/shards_utils.h /usr/local/include
 ```
 
 Alternatively, just put the files in a folder (or leave them in /lib/) and add that directory to LIBRARY_PATH (for the static library, libSHARDS.a) and/or to LD_LIBRARY_PATH (for the shared library, libSHARDS.so). With this method you will have to include the SHARDS.h and shards_utils.h files in the directory of the project that will use this library.
