@@ -482,9 +482,10 @@ void SHARDS_free(SHARDS* shards){
 GHashTable *MRC_fixed_rate(SHARDS *shards){
 
 		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
-		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
 		keys = g_list_sort(keys, (GCompareFunc) intcmp );
 		GList *tmp_keys = keys;
+		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
+		
 
 		double *missrate = NULL;
 		int *cache_size = NULL;
@@ -538,10 +539,12 @@ GHashTable *MRC_fixed_rate(SHARDS *shards){
 GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 
 		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
+		keys = g_list_sort(keys, (GCompareFunc) intcmp );
+		GList *tmp_keys = keys;
 		GList* remove_link=NULL;
 
 		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
-		keys = g_list_sort(keys, (GCompareFunc) intcmp );
+		
 		
 
 		double *missrate = NULL;
@@ -550,7 +553,7 @@ GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 		unsigned int total_sum = *(int*)(g_hash_table_lookup(shards->dist_histogram, keys->data) );
 		//printf("TOTAL SUM: %u \n", total_sum);
 		int hist_size = g_hash_table_size(shards->dist_histogram);
-        GList *tmp_keys = keys;
+        
         
         
         
@@ -641,9 +644,10 @@ GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 GHashTable *MRC_fixed_size(SHARDS *shards){
 
 		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
+		keys = g_list_sort(keys, (GCompareFunc) intcmp );
 		GList *tmp_keys =keys;
 		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
-		keys = g_list_sort(keys, (GCompareFunc) intcmp );
+		
 		uint64_t T_new = shards->T;
 		double tmp = 0.0;
 
@@ -740,9 +744,10 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 
 
 		GList *keys = g_hash_table_get_keys(shards->dist_histogram);
+		keys = g_list_sort(keys, (GCompareFunc) intcmp );
 		GList *tmp_keys = keys;
 		GHashTable *tabla = g_hash_table_new_full(g_int_hash, g_int_equal, (GDestroyNotify)free, (GDestroyNotify)free);
-		keys = g_list_sort(keys, (GCompareFunc) intcmp );
+		
 		uint64_t T_new = shards->T;
 		double tmp = 0.0;
 
