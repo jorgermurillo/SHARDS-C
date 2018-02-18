@@ -30,19 +30,29 @@ int main(int argc, char** argv){
 	FILE *file;
 	file = fopen(argv[4], "r");
 	clock_t start_time = clock();
+
+	int cnt = 0;
+
 	while(fgets(object, obj_length+2, file)!=NULL){
 		
 	
 		SHARDS_feed_obj(shards, object, obj_length);
 		
 		object = (char*)calloc((obj_length+2),sizeof(char));
+		cnt++;
+		if(cnt==100000){
+			break;
+		}
 	}
-	free(object);
-
-    fclose(file);
 
 
-	GHashTable *mrc = MRC_empty(shards);
+
+	
+
+    //fclose(file);
+
+	printf("Loop 1 ended.\n");
+	GHashTable *mrc = MRC(shards);
 
 	
 	FILE *mrc_file = fopen(argv[5],"w");
@@ -56,10 +66,32 @@ int main(int argc, char** argv){
 
 		keys=keys->next;
 	}
+
+
+	g_hash_table_destroy(mrc);
+
+
+	//HERE STARS THE SECOND LOOP READING WHATS LEFT OF THE TRACE FILE
+	while(fgets(object, obj_length+2, file)!=NULL){
+		
+	
+		SHARDS_feed_obj(shards, object, obj_length);
+		
+		object = (char*)calloc((obj_length+2),sizeof(char));
+		cnt++;
+		
+	}
+	free(object);
+	printf("Loop 2 ended \n");
+	mrc = MRC(shards);
+	
+	printf("MRC created.\n");
+
 	clock_t end_time = clock();
 	
 	fclose(mrc_file);
 	g_list_free(first);
+	
 	g_hash_table_destroy(mrc);
 	
 	printf("%ld\n", start_time);
@@ -71,6 +103,8 @@ int main(int argc, char** argv){
 	double throughput = objects_parsed/(total_time+1);
     SHARDS_free(shards);
 	printf("Throughput: %f\n", throughput);
+
+	//SHARDS_free(shards);
     return 0;
 
 }

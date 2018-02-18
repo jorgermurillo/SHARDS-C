@@ -688,7 +688,8 @@ GHashTable *MRC_fixed_size(SHARDS *shards){
 				
 				
 				*missrate =  (double) part_sum;
-				cache_size = (keys->data);
+				cache_size = malloc(sizeof(int));
+				*cache_size = * (int*)(keys->data);
 				//printf("cache size: %d part_sum: %f  T: %"PRIu64" T_new %"PRIu64" \n", *cache_size, *missrate, hist_value[1], T_new);
 				g_hash_table_insert(tabla, cache_size, missrate);
 
