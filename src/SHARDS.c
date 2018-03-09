@@ -601,6 +601,10 @@ GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 			
 		}else if(hist_size == 1){
 
+
+
+			
+			
 			//	if hist_size == 1	
 			//printf("WHATSUP\n");
 			cache_size = malloc(sizeof(int));			
@@ -609,7 +613,22 @@ GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 			*missrate = 1.0;
 			g_hash_table_insert(tabla, cache_size, missrate);
 			//printf("GETOUT\n");
+			remove_link = keys;
+			keys = g_list_remove_link(keys,remove_link); //First parameter is the list, second is the node we wish to remove
+			
+			//Then we remove that key and its associated value from dist_histogram (this frees the value, not the key)
+			g_hash_table_remove(shards->dist_histogram,remove_link->data);
+			
+			
+			
+			//free the data inside remove_link
+			free(remove_link->data);
+			//Now that the data is freed, we free the GList node itself.
+			g_list_free(remove_link);	//free the GList node
 
+			//We dont need to do a keys=keys->next, g_list_remove_link() did that for us already
+			//keys = keys->next;
+			remove_link=NULL;
 
 		}else{
 			//printf("The reuse distance histogram(dist_histogram) is empty");
@@ -847,11 +866,31 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 			}
 		}else if(hist_size == 1){
 
+			
 			cache_size = malloc(sizeof(int));			
 			missrate = malloc(sizeof(double));
 			*cache_size = *(int*)(keys->data);
 			*missrate = 1.0;
 			g_hash_table_insert(tabla, cache_size, missrate);
+
+			remove_link = keys;
+			keys = g_list_remove_link(keys,remove_link); //First parameter is the list, second is the node we wish to remove
+			
+			//Then we remove that key and its associated value from dist_histogram (this frees the value, not the key)
+			g_hash_table_remove(shards->dist_histogram,remove_link->data);
+			
+			
+			
+
+
+			//free the data inside remove_link
+			free(remove_link->data);
+			//Now that the data is freed, we free the GList node itself.
+			g_list_free(remove_link);	//free the GList node
+			
+			//We dont need to do a keys=keys->next, g_list_remove_link() did that for us already
+			//keys = keys->next;
+			remove_link=NULL;
 			
 		}else{
 			//printf("The reuse distance histogram (dist_histogram) is empty");
