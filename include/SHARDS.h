@@ -1,6 +1,9 @@
 #ifndef __SHARDS_H
 #define __SHARDS_H
 
+#ifdef __cplusplus
+extern "C"{
+#endif 
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -113,4 +116,10 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards);
 bool dummy(void* x);
 */
 
+
+#ifdef __cplusplus
+}
 #endif
+
+#endif
+

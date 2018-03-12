@@ -1,6 +1,11 @@
 #ifndef SHARDS_UTILS
 #define SHARDS_UTILS
 
+
+#ifdef __cplusplus
+extern "C"{
+#endif 
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -45,5 +50,10 @@ void printtree(Tree * t, int d);
 void freetree(Tree* t);
 //calc_distance() implemented by Jorge Murillo, 2017.
 int calc_distance(T timestamp, Tree *t);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif 
 
