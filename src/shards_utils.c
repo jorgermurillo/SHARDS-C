@@ -15,7 +15,7 @@
 //murmurhash3.c COMES FROM wolkykim/qlibc
 
 
-bool qhashmurmur3_128(const void *data, size_t nbytes, void *retbuf);
+//bool qhashmurmur3_128(const void *data, size_t nbytes, void *retbuf);
 
 /*
 int main(){
@@ -39,7 +39,7 @@ bool qhashmurmur3_128(const void *data, size_t nbytes, void *retbuf) {
 
     const int nblocks = nbytes / 16;
     const uint64_t *blocks = (const uint64_t *) (data);
-    const uint8_t *tail = (const uint8_t *) (data + (nblocks * 16));
+    const uint8_t *tail = (const uint8_t *) ((const uint8_t *)data + (nblocks * 16));
 
     uint64_t h1 = 0;
     uint64_t h2 = 0;
@@ -271,7 +271,7 @@ Tree * splay (T i, Tree *t)
 Tree * insert(T i, Tree * t) {
 /* Insert key i into the tree t, if it is not already there. */
 /* Return a pointer to the resulting tree.                   */
-    Tree * new;
+    Tree * newtree; //Changed the name of this variable from "new" to "newtree" to allow compiling in C++
 
     if (t != NULL) {
 	t = splay(i,t);
@@ -279,27 +279,27 @@ Tree * insert(T i, Tree * t) {
 	    return t;  /* it's already there */
 	}
     }
-    new = (Tree *) malloc (sizeof (Tree));
-    if (new == NULL) {printf("Ran out of space\n"); exit(1);}
+    newtree = (Tree *) malloc (sizeof (Tree));
+    if (newtree == NULL) {printf("Ran out of space\n"); exit(1);}
     if (t == NULL) {
-	new->left = new->right = NULL;
+	newtree->left = newtree->right = NULL;
     } else if (compare(i, t->key) < 0) {
-	new->left = t->left;
-	new->right = t;
+	newtree->left = t->left;
+	newtree->right = t;
 	t->left = NULL;
 	t->size = 1+node_size(t->right);
     } else {
-	new->right = t->right;
-	new->left = t;
+	newtree->right = t->right;
+	newtree->left = t;
 	t->right = NULL;
 	t->size = 1+node_size(t->left);
     }
-    new->key = i;
-    new->size = 1 + node_size(new->left) + node_size(new->right);
-    return new;
+    newtree->key = i;
+    newtree->size = 1 + node_size(newtree->left) + node_size(newtree->right);
+    return newtree;
 }
 
-Tree * delete(T i, Tree *t) {
+Tree * deletetree(T i, Tree *t) {
 /* Deletes i from the tree if it's there.               */
 /* Return a pointer to the resulting tree.              */
     Tree * x;

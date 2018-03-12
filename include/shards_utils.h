@@ -39,7 +39,7 @@ struct tree_node {
  
 Tree * splay (T i, Tree *t);
 Tree * insert(T i, Tree * t); 
-Tree * delete(T i, Tree *t); 
+Tree * deletetree(T i, Tree *t); // Changed the name of this function from delete() to deletetree()
 Tree * find_rank(T r, Tree *t); 
 void printtree(Tree * t, int d); 
 void freetree(Tree* t);

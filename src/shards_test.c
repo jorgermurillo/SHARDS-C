@@ -40,9 +40,11 @@ int main(int argc, char** argv){
 		
 		object = (char*)calloc((obj_length+2),sizeof(char));
 		cnt++;
+		/*
 		if(cnt==100000){
 			break;
 		}
+		*/
 	}
 
 
@@ -51,7 +53,7 @@ int main(int argc, char** argv){
 
     //fclose(file);
 
-	printf("Loop 1 ended.\n");
+	//printf("Loop 1 ended.\n");
 	GHashTable *mrc = MRC(shards);
 
 	
@@ -67,7 +69,7 @@ int main(int argc, char** argv){
 		keys=keys->next;
 	}
 
-
+	/*
 	g_hash_table_destroy(mrc);
 
 
@@ -81,12 +83,13 @@ int main(int argc, char** argv){
 		cnt++;
 		
 	}
+
 	free(object);
 	printf("Loop 2 ended \n");
 	mrc = MRC(shards);
 	
 	printf("MRC created.\n");
-
+	*/
 	clock_t end_time = clock();
 	
 	fclose(mrc_file);

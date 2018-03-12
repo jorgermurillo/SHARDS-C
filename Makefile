@@ -32,9 +32,6 @@ obj/SHARDS.o : src/SHARDS.c
 
 obj/shard_utils.o: src/shards_utils.c
 	$(CC) -g  -fPIC -c $(CFLAGS) $(LFLAGS)  src/shards_utils.c -o $@
-#obj/splay.o: src/splay.c 
-#	$(CC) -g  -fPIC -c $(CFLAGS) $(LFLAGS)  src/splay.c -o $@
 
-#obj/murmurhash3.o: src/murmurhash3.c 
-#	$(CC) -g -fPIC -c  $(CFLAGS) $(LFLAGS)  src/murmurhash3.c -o $@
+
 
