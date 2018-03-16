@@ -599,6 +599,8 @@ GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 						
 			}	
 			
+			g_list_free (tmp_keys);
+			
 		}else if(hist_size == 1){
 
 
@@ -636,7 +638,7 @@ GHashTable *MRC_fixed_rate_empty(SHARDS* shards){
 
 		}
 		
-		g_list_free (tmp_keys);
+		
 
 		// Free the keys from time_table (object) which are also the data for the set_list that act as values for set_table
 		keys = g_hash_table_get_keys(shards->time_table);
@@ -864,6 +866,10 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 				*/
 				keys= keys->next;		
 			}
+
+			//keys = g_list_first(keys);
+			g_list_free (tmp_keys);
+			tmp_keys = NULL;
 		}else if(hist_size == 1){
 
 			
@@ -897,9 +903,7 @@ GHashTable *MRC_fixed_size_empty(SHARDS *shards){
 			return NULL;
 
 		}
-		//keys = g_list_first(keys);
-		g_list_free (tmp_keys);
-		tmp_keys = NULL;
+		
 		// Free the keys from time_table (object) which are also the data for the set_list that act as values for set_table
 		keys = g_hash_table_get_keys(shards->time_table);
 		g_list_free_full (keys, (GDestroyNotify) free);
