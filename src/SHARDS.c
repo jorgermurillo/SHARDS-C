@@ -1,7 +1,7 @@
 #include "SHARDS.h"
 
 /*
-	This function calculates the resude distance of a reference to an object in the trace/workload. Reuse distance is the number of unique objects in a trace between 
+	This function calculates the reuse distance of a reference to an object in the trace/workload. Reuse distance is the number of unique objects in a trace between 
 	the new reference and the last reference to the same object. Objects appearing for the first time have a reuse distance of infinity (here represented by zero). 
 	All reuse distances are positive.
 
